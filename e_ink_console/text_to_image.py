@@ -1,24 +1,26 @@
+import logging
+
 from PIL import Image, ImageDraw
 
 BLACK = 0
 WHITE = 255
 
+log = logging.getLogger(__name__)
 
-def get_terminal_update_image(buffer_list, text_area, font, font_size, font_width):
+def get_terminal_update_image(buffer_list, text_area, font, font_height, font_width):
     height = (text_area[1] - text_area[0] + 1)
     width = (text_area[3] - text_area[2] + 1)
-    print(f"image height, width {height, width}")
+    log.debug(f"Producing image with height, width {height, width} characters or {height*font_height, width*font_width} px")
 
-    image = Image.new('1', (width * font_width, height * font_size), WHITE)
+    image = Image.new('1', (width * font_width, height * font_height), WHITE)
     draw = ImageDraw.Draw(image)
     for row in range(text_area[0], text_area[1] + 1):
-        print(f"selecting print {row}, {text_area[2]} to {text_area[3] + 1}")
         to_print = (buffer_list[row][text_area[2]:text_area[3] + 1])
         r = row - text_area[0]
         c = 0
-        print(f"drawing at {r, c}: '{to_print}'")
+        log.debug(f"Printing @{r, c}: '{to_print}'")
         draw.text(
-            (c * font_size, r * font_size),
+            (c * font_width, r * font_height),
             to_print,
             font=font,
             fill=BLACK,
@@ -76,11 +78,3 @@ def get_contained_text_area(row_sections, old_cursor, new_cursor):
         col_max = max(col_max, old_cursor_col, new_cursor[1])
 
     return (row_min, row_max, col_min, col_max)
-
-
-def get_changed_buffer_text(buff, area):
-    """Takes the buffer as a list of strings."""
-    changed = []
-    for row in buff[area[0]:area[1] + 1]:
-        changed.append(row[area[2]:area[3] + 1])
-    return changed

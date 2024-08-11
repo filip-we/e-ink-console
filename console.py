@@ -1,3 +1,5 @@
+import logging
+
 import os
 import struct
 import sys
@@ -8,11 +10,20 @@ import time
 from dataclasses import dataclass
 from PIL import ImageFont
 from e_ink_console.text_to_image import (
-    get_changed_buffer_text,
     get_contained_text_area,
     get_terminal_update_image,
     identify_changed_text_area,
 )
+
+
+log = logging.getLogger()
+log.setLevel(logging.DEBUG)
+
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+ch.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+log.addHandler(ch)
+
 
 @dataclass
 class ConsoleSettings():
@@ -32,7 +43,7 @@ def setup(settings, tty):
         os.stat(vcsa)
         os.stat(tty)
     except OSError:
-        print("Error with {vcsa} or {tty}.")
+        log.critical("Error with {vcsa} or {tty}.")
         exit(1)
 
     # Set size
@@ -58,22 +69,23 @@ def main_loop(vcsa, tty, font, font_size, font_width):
 
         if buff == old_buff and cursor == old_cursor:
             time.sleep(2)
-            print("skipping update")
+            ("skipping update")
             continue
 
-        print(f"cursor {cursor}")
+        log.debug(f"Cursor {cursor}")
+        log.debug(f"Buff length {len(buff)}")
+        log.debug(f"Rows, cols: {rows, cols}")
+
         changed_sections = identify_changed_text_area(old_buff, buff, rows, cols)
-        print(f"changed_sections {changed_sections}")
+        log.debug(f"changed_sections {changed_sections}")
+
         contained_text_area = get_contained_text_area(changed_sections, old_cursor, cursor)
-        print(f"contained_text_area {contained_text_area}")
+        log.debug(f"contained_text_area {contained_text_area}")
 
         decoded_buff_list = split(buff.decode(encoding, "replace"), cols * character_encoding_width)
-        changed_text = get_changed_buffer_text(decoded_buff_list, contained_text_area)
 
         nice = "\n".join(decoded_buff_list)
-        print(nice)
-        print(f"----------- buff length {len(buff)} (nice {len(nice)})")
-        print(f"----------- row, col: {rows, cols}")
+        log.debug("\n" + nice)
 
         image = get_terminal_update_image(
             decoded_buff_list,
