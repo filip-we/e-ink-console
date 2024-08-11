@@ -16,17 +16,17 @@ def get_terminal_update_image(buffer_list, text_area, font, font_height, font_wi
     draw = ImageDraw.Draw(image)
     for row in range(text_area[0], text_area[1] + 1):
         to_print = (buffer_list[row][text_area[2]:text_area[3] + 1])
-        r = row - text_area[0]
-        c = 0
+        r = (row - text_area[0]) * font_height
+        c = 0 * font_width
         log.debug(f"Printing @{r, c}: '{to_print}'")
         draw.text(
-            (c * font_width, r * font_height),
+            (c, r),
             to_print,
             font=font,
             fill=BLACK,
             spacing=2,
         )
-    return image
+    return image, r, c
 
 
 def identify_changed_text_area(old, new, rows, cols):

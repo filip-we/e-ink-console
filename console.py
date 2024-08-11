@@ -3,8 +3,10 @@ import logging
 import os
 import struct
 import sys
+import subprocess
 import fcntl
 import termios
+import tempfile
 import time
 
 from dataclasses import dataclass
@@ -29,6 +31,8 @@ log.addHandler(ch)
 class ConsoleSettings():
     rows: int
     cols: int
+    screen_width: int
+    screen_height: int
     font_path: str
     font_size: int = 16
     font_width: int = 8
@@ -51,7 +55,16 @@ def setup(settings, tty):
     with open(tty, 'w') as file_buffer:
         fcntl.ioctl(file_buffer.fileno(), termios.TIOCSWINSZ, size)
 
-def main_loop(vcsa, tty, font, font_size, font_width):
+
+def update_screen(screen_height, screen_width, image_file_path, pos_height, pos_width, program):
+    cmd = [program, image_file_path, str(pos_height), str(pos_width)]
+    p = subprocess.run(" ".join(cmd),
+        shell=True,
+        check=True,
+    )
+
+
+def main_loop(vcsa, tty, font, font_size, font_width, it_8951_driver_program):
     character_encoding_width = 1
     encoding = "utf-8"
     old_buff = b''
@@ -87,33 +100,42 @@ def main_loop(vcsa, tty, font, font_size, font_width):
         nice = "\n".join(decoded_buff_list)
         log.debug("\n" + nice)
 
-        image = get_terminal_update_image(
+        image, pos_height, pos_width  = get_terminal_update_image(
             decoded_buff_list,
             contained_text_area,
             font,
             font_size,
             font_width,
         )
-        with open("buff.png", "wb") as fb:
-            image.save(fb)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with open(os.path.join(temp_dir, "buffer.png"), "wb") as fb:
+                image.save(fb)
+                update_screen(settings.screen_height, settings.screen_width, fb.name, pos_height, pos_width, it_8951_driver_program)
 
         old_buff = buff
         old_cursor = cursor
 
-        # Upload to screen
 
 if __name__ == "__main__":
     vcsa = "/dev/vcsa" + sys.argv[1]
     tty = "/dev/tty" + sys.argv[1]
+
+    IT8951_DRIVER_PROGRAM = os.environ.get("IT8951_DRIVER_PROGRAM")
+    if not IT8951_DRIVER_PROGRAM:
+        raise ValueError("You need to set the path to the IT8951-drivers!")
+
+
     settings = ConsoleSettings(
         rows=20,
         cols=40,
         font_path=sys.argv[2],
         font_size=16,
         font_width=8,
+        screen_width=1200,
+        screen_height=825,
     )
     setup(settings, tty)
 
     font = ImageFont.truetype(settings.font_path, settings.font_size)
 
-    main_loop(vcsa, tty, font, settings.font_size, settings.font_width)
+    main_loop(vcsa, tty, font, settings.font_size, settings.font_width, IT8951_DRIVER_PROGRAM)
