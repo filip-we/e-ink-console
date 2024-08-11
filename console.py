@@ -20,6 +20,7 @@ class ConsoleSettings():
     cols: int
     font_path: str
     font_size: int = 16
+    font_width: int = 8
 
 
 def split(s, n):
@@ -39,7 +40,7 @@ def setup(settings, tty):
     with open(tty, 'w') as file_buffer:
         fcntl.ioctl(file_buffer.fileno(), termios.TIOCSWINSZ, size)
 
-def main_loop(vcsa, tty, font, font_size):
+def main_loop(vcsa, tty, font, font_size, font_width):
     character_encoding_width = 1
     encoding = "utf-8"
     old_buff = b''
@@ -69,14 +70,17 @@ def main_loop(vcsa, tty, font, font_size):
         decoded_buff_list = split(buff.decode(encoding, "replace"), cols * character_encoding_width)
         changed_text = get_changed_buffer_text(decoded_buff_list, contained_text_area)
 
-# crashes the get_image:
-# contained_text_area (17, 18, 0, 1)
+        nice = "\n".join(decoded_buff_list)
+        print(nice)
+        print(f"----------- buff length {len(buff)} (nice {len(nice)})")
+        print(f"----------- row, col: {rows, cols}")
+
         image = get_terminal_update_image(
-            changed_text,
-            contained_text_area[1] - contained_text_area[0] + 1,
-            contained_text_area[3] - contained_text_area[2] + 1,
+            decoded_buff_list,
+            contained_text_area,
             font,
             font_size,
+            font_width,
         )
         with open("buff.png", "wb") as fb:
             image.save(fb)
@@ -85,11 +89,6 @@ def main_loop(vcsa, tty, font, font_size):
         old_cursor = cursor
 
         # Upload to screen
-        nice = "\n".join(decoded_buff_list)
-        print(nice)
-        print(f"----------- buff length {len(buff)} (nice {len(nice)})")
-        print(f"----------- row, col: {rows, cols}")
-
 
 if __name__ == "__main__":
     vcsa = "/dev/vcsa" + sys.argv[1]
@@ -99,9 +98,10 @@ if __name__ == "__main__":
         cols=40,
         font_path=sys.argv[2],
         font_size=16,
+        font_width=8,
     )
     setup(settings, tty)
 
     font = ImageFont.truetype(settings.font_path, settings.font_size)
 
-    main_loop(vcsa, tty, font, settings.font_size)
+    main_loop(vcsa, tty, font, settings.font_size, settings.font_width)

@@ -4,16 +4,22 @@ BLACK = 0
 WHITE = 255
 
 
-def get_terminal_update_image(buffer_list, text_area, font, font_size):
-    height = (text_area[1] - text_area[0] + 1) * font_size
-    width = (text_area[3] - text_area[2] + 1) * font_size
+def get_terminal_update_image(buffer_list, text_area, font, font_size, font_width):
+    height = (text_area[1] - text_area[0] + 1)
+    width = (text_area[3] - text_area[2] + 1)
+    print(f"image height, width {height, width}")
 
-    image = Image.new('1', (width, height), WHITE)
+    image = Image.new('1', (width * font_width, height * font_size), WHITE)
     draw = ImageDraw.Draw(image)
-    for row in range(text_area[1] - text_area[0]):
+    for row in range(text_area[0], text_area[1] + 1):
+        print(f"selecting print {row}, {text_area[2]} to {text_area[3] + 1}")
+        to_print = (buffer_list[row][text_area[2]:text_area[3] + 1])
+        r = row - text_area[0]
+        c = 0
+        print(f"drawing at {r, c}: '{to_print}'")
         draw.text(
-            ((text_area[0] + row) * font_size, text_area[1] * font_size),
-            buffer_list[row + text_area[0]:text_area[1]],
+            (c * font_size, r * font_size),
+            to_print,
             font=font,
             fill=BLACK,
             spacing=2,
@@ -42,8 +48,8 @@ def identify_changed_text_area(old, new, rows, cols):
         try:
             last_diff = cols - 1 - diff.index(False)
         except ValueError:
-            diff_entries.append((row, first_diff, first_diff + 1))
-        diff_entries.append((row, first_diff, last_diff + 1))
+            diff_entries.append((row, first_diff, first_diff))
+        diff_entries.append((row, first_diff, last_diff))
     return diff_entries
 
 
@@ -74,7 +80,7 @@ def get_contained_text_area(row_sections, old_cursor, new_cursor):
 
 def get_changed_buffer_text(buff, area):
     """Takes the buffer as a list of strings."""
-    changed = ""
+    changed = []
     for row in buff[area[0]:area[1] + 1]:
-        changed += row[area[2]:area[3] + 1]
+        changed.append(row[area[2]:area[3] + 1])
     return changed
