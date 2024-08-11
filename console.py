@@ -34,7 +34,7 @@ class ConsoleSettings():
     screen_width: int
     screen_height: int
     font_path: str
-    font_size: int = 16
+    font_height: int = 16
     font_width: int = 8
 
 
@@ -57,14 +57,15 @@ def setup(settings, tty):
 
 
 def update_screen(screen_height, screen_width, image_file_path, pos_height, pos_width, program):
-    cmd = [program, image_file_path, str(pos_height), str(pos_width)]
+    cmd = [program, image_file_path, str(pos_width), str(pos_height)]
+    log.debug(f"Calling IT8951-drivers with arguments: {cmd}")
     p = subprocess.run(" ".join(cmd),
         shell=True,
         check=True,
     )
 
 
-def main_loop(vcsa, tty, font, font_size, font_width, it_8951_driver_program):
+def main_loop(vcsa, tty, font, font_height, font_width, it_8951_driver_program):
     character_encoding_width = 1
     encoding = "utf-8"
     old_buff = b''
@@ -100,17 +101,24 @@ def main_loop(vcsa, tty, font, font_size, font_width, it_8951_driver_program):
         nice = "\n".join(decoded_buff_list)
         log.debug("\n" + nice)
 
-        image, pos_height, pos_width  = get_terminal_update_image(
+        image = get_terminal_update_image(
             decoded_buff_list,
             contained_text_area,
             font,
-            font_size,
+            font_height,
             font_width,
         )
         with tempfile.TemporaryDirectory() as temp_dir:
             with open(os.path.join(temp_dir, "buffer.png"), "wb") as fb:
                 image.save(fb)
-                update_screen(settings.screen_height, settings.screen_width, fb.name, pos_height, pos_width, it_8951_driver_program)
+                update_screen(
+                    settings.screen_height,
+                    settings.screen_width,
+                    fb.name,
+                    contained_text_area[0] * font_height,
+                    contained_text_area[2] * font_width,
+                    it_8951_driver_program,
+                )
 
         old_buff = buff
         old_cursor = cursor
@@ -119,23 +127,20 @@ def main_loop(vcsa, tty, font, font_size, font_width, it_8951_driver_program):
 if __name__ == "__main__":
     vcsa = "/dev/vcsa" + sys.argv[1]
     tty = "/dev/tty" + sys.argv[1]
-
-    IT8951_DRIVER_PROGRAM = os.environ.get("IT8951_DRIVER_PROGRAM")
-    if not IT8951_DRIVER_PROGRAM:
-        raise ValueError("You need to set the path to the IT8951-drivers!")
-
+    font_path = sys.argv[2]
+    it8951_driver_program = sys.argv[3]
 
     settings = ConsoleSettings(
         rows=20,
         cols=40,
-        font_path=sys.argv[2],
-        font_size=16,
+        font_path=font_path,
+        font_height=16,
         font_width=8,
         screen_width=1200,
         screen_height=825,
     )
     setup(settings, tty)
 
-    font = ImageFont.truetype(settings.font_path, settings.font_size)
+    font = ImageFont.truetype(settings.font_path, settings.font_height)
 
-    main_loop(vcsa, tty, font, settings.font_size, settings.font_width, IT8951_DRIVER_PROGRAM)
+    main_loop(vcsa, tty, font, settings.font_height, settings.font_width, it8951_driver_program)

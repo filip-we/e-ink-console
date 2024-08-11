@@ -26,7 +26,7 @@ def get_terminal_update_image(buffer_list, text_area, font, font_height, font_wi
             fill=BLACK,
             spacing=2,
         )
-    return image, r, c
+    return image
 
 
 def identify_changed_text_area(old, new, rows, cols):
