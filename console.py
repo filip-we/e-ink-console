@@ -7,7 +7,7 @@ import time
 
 from dataclasses import dataclass
 from PIL import ImageFont
-from e_ink_console.text_to_image import get_image
+from e_ink_console.text_to_image import get_contained_text_area, get_image, identify_changed_text_area
 
 @dataclass
 class ConsoleSettings():
@@ -53,7 +53,7 @@ def main_loop(vcsa, tty):
                 if buff != old_buff:
                     print("-----------")
                     print(nice_buff)
-                    # Identify differences
+                    changed_sections = identify_changed_text_area(old_buff, buff, rows, cols)
                     # Create image with only updated portions
                     # Upload to screen
                 old_buff = buff
