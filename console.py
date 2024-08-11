@@ -5,14 +5,22 @@ import fcntl
 import termios
 import time
 
+from dataclasses import dataclass
 from PIL import ImageFont
-from text_to_image import get_image
+from e_ink_console.text_to_image import get_image
+
+@dataclass
+class ConsoleSettings():
+    rows: int
+    cols: int
+    font_path: str
+    font_size: int = 16
 
 
 def split(s, n):
     return [s[i:i + n] for i in range(0, len(s), n)]
 
-def setup(tty, font_path, font_size, rows, cols):
+def setup(settings, tty):
     # Check valid vcsa
     try:
         os.stat(vcsa)
@@ -20,14 +28,11 @@ def setup(tty, font_path, font_size, rows, cols):
     except OSError:
         print("Error with {vcsa} or {tty}.")
         exit(1)
-    font = ImageFont.truetype(font_path, font_size)
 
     # Set size
-    size = struct.pack("HHHH", rows, cols, 0, 0)
+    size = struct.pack("HHHH", settings.rows, settings.cols, 0, 0)
     with open(tty, 'w') as file_buffer:
         fcntl.ioctl(file_buffer.fileno(), termios.TIOCSWINSZ, size)
-
-    return font
 
 def main_loop(vcsa, tty):
     character_width = 1
@@ -48,18 +53,26 @@ def main_loop(vcsa, tty):
                 if buff != old_buff:
                     print("-----------")
                     print(nice_buff)
+                    # Identify differences
+                    # Create image with only updated portions
+                    # Upload to screen
                 old_buff = buff
                 time.sleep(0.1)
+
 
 if __name__ == "__main__":
     vcsa = "/dev/vcsa" + sys.argv[1]
     tty = "/dev/tty" + sys.argv[1]
-    font_path = sys.argv[2]
-    font_size = 16
-    rows = 5
-    cols = 40
-    font = setup(tty, font_path, font_size=font_size, rows=rows, cols=cols)
-    image = get_image(rows, cols, font, "hej hej", font_size)
+    settings = ConsoleSettings(
+        rows=20,
+        cols=40,
+        font_path=sys.argv[2],
+        font_size=16,
+    )
+    setup(settings, tty)
+
+    font = ImageFont.truetype(settings.font_path, settings.font_size)
+    image = get_image(settings, "hej hej", font)
 
     with open("temp.jpg", "wb") as fb:
         image.save(fb)
