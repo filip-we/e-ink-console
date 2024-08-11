@@ -95,7 +95,6 @@ def main_loop(vcsa, tty, font, font_height, font_width, it_8951_driver_program):
 
         if buff == old_buff and cursor == old_cursor:
             time.sleep(2)
-            ("skipping update")
             continue
 
         log.debug(f"Cursor {cursor}")
