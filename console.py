@@ -1,5 +1,6 @@
 import logging
 
+import click
 import os
 import struct
 import sys
@@ -8,7 +9,6 @@ import termios
 import tempfile
 import time
 
-from dataclasses import dataclass
 from PIL import ImageFont
 
 from e_ink_console.screen import write_buffer_to_screen
@@ -23,18 +23,27 @@ ch.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(me
 log.addHandler(ch)
 
 
-@dataclass
 class ConsoleSettings():
-    rows: int
-    cols: int
-    screen_width: int
-    screen_height: int
-    font_path: str
-    font_height: int = 16
-    font_width: int = 8
+    def __init__(self,
+        rows: int,
+        cols: int,
+        screen_width: int,
+        screen_height: int,
+        font_file: str,
+        font_height: int = 16,
+        font_width: int = 8,
+    ):
+        self.rows = rows
+        self.cols = cols
+        self.screen_width = screen_width
+        self.screen_height = screen_height
+        self.font_file =  font_file
+        self.font_height = font_height
+        self.font_width = font_width
+        self.font = ImageFont.truetype(font_file, self.font_height)
 
 
-def setup(settings, tty):
+def setup(settings, tty, vcsa):
     # Check valid vcsa
     try:
         os.stat(vcsa)
@@ -47,11 +56,15 @@ def setup(settings, tty):
     with open(tty, 'wb') as file_buffer:
         fcntl.ioctl(file_buffer.fileno(), termios.TIOCSWINSZ, size)
 
-def main_loop(vcsa, tty, font, font_height, font_width, it_8951_driver_program):
+def main_loop(terminal_nr, settings, it8951_driver_program):
+    vcsa = "/dev/vcsa" + terminal_nr
+    tty = "/dev/tty" + terminal_nr
     character_encoding_width = 1
     encoding = "utf-8"
     old_buff = b''
     old_cursor = (-1, -1)
+
+    setup(settings, tty, vcsa)
 
     while True:
         with open(vcsa.replace("vcsa", "vcs"), 'rb') as vcsu_buffer:
@@ -71,29 +84,28 @@ def main_loop(vcsa, tty, font, font_height, font_width, it_8951_driver_program):
         log.debug(f"Buff length {len(buff)}")
         log.debug(f"Rows, cols: {rows, cols}")
 
-        write_buffer_to_screen(settings, old_buff, buff, old_cursor, cursor, character_encoding_width, font, encoding, it8951_driver_program)
+        write_buffer_to_screen(settings, old_buff, buff, old_cursor, cursor, character_encoding_width, settings.font, encoding, it8951_driver_program)
 
         old_buff = buff
         old_cursor = cursor
 
 
-if __name__ == "__main__":
-    vcsa = "/dev/vcsa" + sys.argv[1]
-    tty = "/dev/tty" + sys.argv[1]
-    font_path = sys.argv[2]
-    it8951_driver_program = sys.argv[3]
-
+@click.command()
+@click.option("--terminal-nr", help="Which /dev/tty to attach to..")
+@click.option("--font-file", help="Path to a font-file.")
+@click.option("--it8951-driver", help="Name of driver-executable.")
+def main(terminal_nr, font_file, it8951_driver):
     settings = ConsoleSettings(
         rows=40,
         cols=80,
-        font_path=font_path,
+        font_file=font_file,
         font_height=16,
         font_width=8,
         screen_width=1200,
         screen_height=825,
     )
-    setup(settings, tty)
 
-    font = ImageFont.truetype(settings.font_path, settings.font_height)
+    main_loop(terminal_nr, settings, it8951_driver)
 
-    main_loop(vcsa, tty, font, settings.font_height, settings.font_width, it8951_driver_program)
+if __name__ == "__main__":
+    main()
