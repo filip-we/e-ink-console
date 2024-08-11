@@ -7,7 +7,12 @@ import time
 
 from dataclasses import dataclass
 from PIL import ImageFont
-from e_ink_console.text_to_image import get_contained_text_area, get_image, identify_changed_text_area
+from e_ink_console.text_to_image import (
+    get_changed_buffer_text,
+    get_contained_text_area,
+    get_terminal_update_image,
+    identify_changed_text_area,
+)
 
 @dataclass
 class ConsoleSettings():
@@ -34,30 +39,56 @@ def setup(settings, tty):
     with open(tty, 'w') as file_buffer:
         fcntl.ioctl(file_buffer.fileno(), termios.TIOCSWINSZ, size)
 
-def main_loop(vcsa, tty):
-    character_width = 1
-    encoding = "utf-32"
+def main_loop(vcsa, tty, font, font_size):
+    character_encoding_width = 1
+    encoding = "utf-8"
     old_buff = b''
+    old_cursor = (-1, -1)
 
     while True:
+        with open(vcsa.replace("vcsa", "vcs"), 'rb') as vcsu_buffer:
+            buff = vcsu_buffer.read()
+
         with open(vcsa, 'rb') as vcsa_buffer:
-            with open(vcsa.replace("vcsa", "vcsu"), 'rb') as vcsu_buffer:
-                attributes = vcsa_buffer.read(4)
-                rows, cols, x, y = list(map(ord, struct.unpack('cccc', attributes)))
+            attributes = vcsa_buffer.read(4)
 
-                buff = vcsu_buffer.read()
-                nice_buff = ''.join([r.decode(encoding, 'replace') + '\n' for r in split(buff, cols * character_width)])
-                char_under_cursor = buff[character_width * (y * rows + x):character_width * (y * rows + x + x)]
-                cursor = (x, y, char_under_cursor.decode(encoding, 'ignore'))
+        rows, cols, cursor_col, cursor_row = list(map(ord, struct.unpack('cccc', attributes)))
+        cursor = (cursor_row, cursor_col) #, char_under_cursor.decode(encoding, 'ignore'))
 
-                if buff != old_buff:
-                    print("-----------")
-                    print(nice_buff)
-                    changed_sections = identify_changed_text_area(old_buff, buff, rows, cols)
-                    # Create image with only updated portions
-                    # Upload to screen
-                old_buff = buff
-                time.sleep(0.1)
+        if buff == old_buff and cursor == old_cursor:
+            time.sleep(2)
+            print("skipping update")
+            continue
+
+        print(f"cursor {cursor}")
+        changed_sections = identify_changed_text_area(old_buff, buff, rows, cols)
+        print(f"changed_sections {changed_sections}")
+        contained_text_area = get_contained_text_area(changed_sections, old_cursor, cursor)
+        print(f"contained_text_area {contained_text_area}")
+
+        decoded_buff_list = split(buff.decode(encoding, "replace"), cols * character_encoding_width)
+        changed_text = get_changed_buffer_text(decoded_buff_list, contained_text_area)
+
+# crashes the get_image:
+# contained_text_area (17, 18, 0, 1)
+        image = get_terminal_update_image(
+            changed_text,
+            contained_text_area[1] - contained_text_area[0] + 1,
+            contained_text_area[3] - contained_text_area[2] + 1,
+            font,
+            font_size,
+        )
+        with open("buff.png", "wb") as fb:
+            image.save(fb)
+
+        old_buff = buff
+        old_cursor = cursor
+
+        # Upload to screen
+        nice = "\n".join(decoded_buff_list)
+        print(nice)
+        print(f"----------- buff length {len(buff)} (nice {len(nice)})")
+        print(f"----------- row, col: {rows, cols}")
 
 
 if __name__ == "__main__":
@@ -72,9 +103,5 @@ if __name__ == "__main__":
     setup(settings, tty)
 
     font = ImageFont.truetype(settings.font_path, settings.font_size)
-    image = get_image(settings, "hej hej", font)
 
-    with open("temp.jpg", "wb") as fb:
-        image.save(fb)
-
-    main_loop(vcsa, tty)
+    main_loop(vcsa, tty, font, settings.font_size)

@@ -3,15 +3,32 @@ from PIL import Image, ImageDraw
 BLACK = 0
 WHITE = 255
 
-def get_image(settings, text, font):
-    # Create image in black and white with 1 bit per pixel.
-    image = Image.new('1', (settings.cols * settings.font_size, settings.rows * settings.font_size), WHITE) # probably white
+
+def get_terminal_update_image(buffer_list, text_area, font, font_size):
+    height = (text_area[1] - text_area[0] + 1) * font_size
+    width = (text_area[3] - text_area[2] + 1) * font_size
+
+    image = Image.new('1', (width, height), WHITE)
     draw = ImageDraw.Draw(image)
-    draw.text((0, 0), text, font=font, fill=BLACK, spacing=2)
+    for row in range(text_area[1] - text_area[0]):
+        draw.text(
+            ((text_area[0] + row) * font_size, text_area[1] * font_size),
+            buffer_list[row + text_area[0]:text_area[1]],
+            font=font,
+            fill=BLACK,
+            spacing=2,
+        )
     return image
+
 
 def identify_changed_text_area(old, new, rows, cols):
     """Locates the section of chaged characters on each line."""
+    if len(old) != len(new):
+        return [(i, 0, cols) for i in range(rows)]
+    elif old == new:
+        # To save some time
+        return []
+
     diff_entries = []
     for row in range(rows):
         old_row_data = old[row * cols:(row + 1) * cols]
@@ -25,21 +42,39 @@ def identify_changed_text_area(old, new, rows, cols):
         try:
             last_diff = cols - 1 - diff.index(False)
         except ValueError:
-            diff_entries.append((row, first_diff, first_diff))
-        diff_entries.append((row, first_diff, last_diff))
+            diff_entries.append((row, first_diff, first_diff + 1))
+        diff_entries.append((row, first_diff, last_diff + 1))
     return diff_entries
 
-def get_contained_text_area(row_sections):
+
+def get_contained_text_area(row_sections, old_cursor, new_cursor):
     """This draws a box around all sections given as input."""
-    if len(row_sections) == 0:
-        raise ValueError("No sections to find a contained area around!")
     row_min = 9999
     row_max = -1
     col_min = 9999
     col_max = -1
-    for row in row_sections:
-        row_min = min(row_min, row[0])
-        row_max = max(row_max, row[0])
-        col_min = min(col_min, row[1])
-        col_max = max(col_max, row[2])
+
+    for section in row_sections:
+        row_min = min(row_min, section[0])
+        row_max = max(row_max, section[0])
+        col_min = min(col_min, section[1])
+        col_max = max(col_max, section[2])
+
+    if old_cursor != new_cursor:
+        # Handle edge case of first drawing of console
+        old_cursor_row = old_cursor[0] if old_cursor[0] >= 0 else new_cursor[0]
+        old_cursor_col = old_cursor[1] if old_cursor[1] >= 0 else new_cursor[1]
+        row_min = min(row_min, old_cursor_row, new_cursor[0])
+        row_max = max(row_max, old_cursor_row, new_cursor[0])
+        col_min = min(col_min, old_cursor_col, new_cursor[1])
+        col_max = max(col_max, old_cursor_col, new_cursor[1])
+
     return (row_min, row_max, col_min, col_max)
+
+
+def get_changed_buffer_text(buff, area):
+    """Takes the buffer as a list of strings."""
+    changed = ""
+    for row in buff[area[0]:area[1] + 1]:
+        changed += row[area[2]:area[3] + 1]
+    return changed

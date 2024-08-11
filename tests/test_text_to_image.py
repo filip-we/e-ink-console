@@ -24,7 +24,7 @@ def test_identify_changed_text_area(old, new, changed):
     ],
 )
 def test_get_contained_text_area(sections, expected):
-    actual = get_contained_text_area(sections)
+    actual = get_contained_text_area(sections, (0,0), (0,0))
     assert actual == expected
 
 
