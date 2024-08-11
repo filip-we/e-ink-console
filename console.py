@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from PIL import ImageFont
 from e_ink_console.text_to_image import (
     get_contained_text_area,
+    get_blank_image,
     get_terminal_update_image,
     identify_changed_text_area,
 )
@@ -41,7 +42,7 @@ class ConsoleSettings():
 def split(s, n):
     return [s[i:i + n] for i in range(0, len(s), n)]
 
-def setup(settings, tty):
+def setup(settings, tty, it_8951_driver_program):
     # Check valid vcsa
     try:
         os.stat(vcsa)
@@ -50,11 +51,22 @@ def setup(settings, tty):
         log.critical("Error with {vcsa} or {tty}.")
         exit(1)
 
-    # Set size
     size = struct.pack("HHHH", settings.rows, settings.cols, 0, 0)
-    with open(tty, 'w') as file_buffer:
+    with open(tty, 'wb') as file_buffer:
         fcntl.ioctl(file_buffer.fileno(), termios.TIOCSWINSZ, size)
 
+    image = get_blank_image(settings.screen_height, settings.screen_width)
+    with tempfile.TemporaryDirectory() as temp_dir:
+        with open(os.path.join(temp_dir, "background.png"), "wb") as fb:
+            image.save(fb)
+            update_screen(
+                settings.screen_height,
+                settings.screen_width,
+                fb.name,
+                0,
+                0,
+                it_8951_driver_program,
+            )
 
 def update_screen(screen_height, screen_width, image_file_path, pos_height, pos_width, program):
     cmd = [program, image_file_path, str(pos_width), str(pos_height)]
@@ -98,9 +110,6 @@ def main_loop(vcsa, tty, font, font_height, font_width, it_8951_driver_program):
 
         decoded_buff_list = split(buff.decode(encoding, "replace"), cols * character_encoding_width)
 
-        nice = "\n".join(decoded_buff_list)
-        log.debug("\n" + nice)
-
         image = get_terminal_update_image(
             decoded_buff_list,
             contained_text_area,
@@ -131,15 +140,15 @@ if __name__ == "__main__":
     it8951_driver_program = sys.argv[3]
 
     settings = ConsoleSettings(
-        rows=20,
-        cols=40,
+        rows=40,
+        cols=80,
         font_path=font_path,
         font_height=16,
         font_width=8,
         screen_width=1200,
         screen_height=825,
     )
-    setup(settings, tty)
+    setup(settings, tty, it8951_driver_program)
 
     font = ImageFont.truetype(settings.font_path, settings.font_height)
 

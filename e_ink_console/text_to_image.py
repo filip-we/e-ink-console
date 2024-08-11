@@ -1,5 +1,7 @@
 import logging
 
+import functools
+
 from PIL import Image, ImageDraw
 
 BLACK = 0
@@ -27,6 +29,10 @@ def get_terminal_update_image(buffer_list, text_area, font, font_height, font_wi
             spacing=2,
         )
     return image
+
+@functools.cache
+def get_blank_image(screen_height, screen_width, background_color=WHITE):
+    return Image.new('1', (screen_width, screen_height), background_color)
 
 
 def identify_changed_text_area(old, new, rows, cols):
