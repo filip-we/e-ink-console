@@ -94,10 +94,12 @@ def main_loop(terminal_nr, settings, it8951_driver_program):
 @click.option("--terminal-nr", help="Which /dev/tty to attach to..")
 @click.option("--font-file", help="Path to a font-file.")
 @click.option("--it8951-driver", help="Name of driver-executable.")
-def main(terminal_nr, font_file, it8951_driver):
+@click.option("--rows", default=40)
+@click.option("--cols", default=80)
+def main(terminal_nr, font_file, it8951_driver, rows, cols):
     settings = ConsoleSettings(
-        rows=40,
-        cols=80,
+        rows=rows,
+        cols=cols,
         font_file=font_file,
         font_height=16,
         font_width=8,
