@@ -9,25 +9,38 @@ WHITE = 255
 
 log = logging.getLogger(__name__)
 
-def get_terminal_update_image(buffer_list, text_area, font, font_height, font_width):
-    height = (text_area[1] - text_area[0] + 1)
-    width = (text_area[3] - text_area[2] + 1)
+def get_terminal_update_image(buffer_list, text_area, cursor, font, font_height, font_width, spacing=0):
+    height = (text_area[2] - text_area[0] + 1)
+    width = (text_area[3] - text_area[1] + 1)
     log.debug(f"Producing image with height, width {height, width} characters or {height*font_height, width*font_width} px")
 
     image = Image.new('1', (width * font_width, height * font_height), WHITE)
     draw = ImageDraw.Draw(image)
-    for row in range(text_area[0], text_area[1] + 1):
-        to_print = (buffer_list[row][text_area[2]:text_area[3] + 1])
+    for row in range(text_area[0], text_area[2] + 1):
+        to_print = (buffer_list[row][text_area[1]:text_area[3] + 1])
+
         r = (row - text_area[0]) * font_height
+        # Should this be text_area[1] * font_width?
         c = 0 * font_width
         log.debug(f"Printing @{r, c}: '{to_print}'")
+
         draw.text(
             (c, r),
             to_print,
             font=font,
             fill=BLACK,
-            spacing=2,
+            spacing=spacing,
         )
+
+    r = cursor[0] - text_area[0]
+    c = cursor[1] - text_area[1]
+    start = (r - 1) * font_height, c * font_width
+    end = (r + 1) * font_height, c * font_width
+    draw.line((start, end),
+        fill=BLACK,
+    )
+    log.debug(f"Printing cursor @ {r, c }: {start, end}.")
+
     return image
 
 @functools.cache
@@ -83,4 +96,4 @@ def get_contained_text_area(row_sections, old_cursor, new_cursor):
         col_min = min(col_min, old_cursor_col, new_cursor[1])
         col_max = max(col_max, old_cursor_col, new_cursor[1])
 
-    return (row_min, row_max, col_min, col_max)
+    return (row_min, col_min, row_max, col_max)

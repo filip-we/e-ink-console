@@ -51,6 +51,7 @@ def write_buffer_to_screen(settings, old_buff, buff, old_cursor, cursor, charact
     image = get_terminal_update_image(
         decoded_buff_list,
         contained_text_area,
+        cursor,
         font,
         settings.font_height,
         settings.font_width,
@@ -63,6 +64,6 @@ def write_buffer_to_screen(settings, old_buff, buff, old_cursor, cursor, charact
                 settings.screen_width,
                 fb.name,
                 contained_text_area[0] * settings.font_height,
-                contained_text_area[2] * settings.font_width,
+                contained_text_area[1] * settings.font_width,
                     it_8951_driver_program,
                 )
