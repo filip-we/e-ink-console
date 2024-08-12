@@ -52,9 +52,13 @@ def setup(settings, tty, vcsa):
         log.critical("Error with {vcsa} or {tty}.")
         exit(1)
 
-    size = struct.pack("HHHH", settings.rows, settings.cols, 0, 0)
-    with open(tty, 'wb') as file_buffer:
-        fcntl.ioctl(file_buffer.fileno(), termios.TIOCSWINSZ, size)
+    try:
+        size = struct.pack("HHHH", settings.rows, settings.cols, 0, 0)
+        with open(tty, 'wb') as file_buffer:
+            fcntl.ioctl(file_buffer.fileno(), termios.TIOCSWINSZ, size)
+    except OSError as e:
+        log.critical(f"Could not set terminal size: {e}")
+
 
 def main_loop(terminal_nr, settings, it8951_driver_program):
     vcsa = "/dev/vcsa" + terminal_nr
@@ -80,7 +84,7 @@ def main_loop(terminal_nr, settings, it8951_driver_program):
             time.sleep(2)
             continue
 
-        log.debug(f"Cursor {cursor}")
+        log.debug(f"Cursor {cursor}, old cursor {old_cursor}.")
         log.debug(f"Buff length {len(buff)}")
         log.debug(f"Rows, cols: {rows, cols}")
 
@@ -90,6 +94,12 @@ def main_loop(terminal_nr, settings, it8951_driver_program):
         old_cursor = cursor
 
 
+def assert_console_input_file_params(files):
+    for file in files:
+        if not os.path.isfile(file):
+            raise FileNotFoundError("Could not locate the file '{file}'.")
+
+
 @click.command()
 @click.option("--terminal-nr", help="Which /dev/tty to attach to..")
 @click.option("--font-file", help="Path to a font-file.")
@@ -97,6 +107,12 @@ def main_loop(terminal_nr, settings, it8951_driver_program):
 @click.option("--rows", default=40)
 @click.option("--cols", default=80)
 def main(terminal_nr, font_file, it8951_driver, rows, cols):
+    assert terminal_nr
+
+    assert_console_input_file_params(
+        [font_file, it8951_driver]
+    )
+
     settings = ConsoleSettings(
         rows=rows,
         cols=cols,
