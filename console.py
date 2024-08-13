@@ -11,7 +11,7 @@ import time
 
 from PIL import ImageFont
 
-from e_ink_console.screen import write_buffer_to_screen
+from e_ink_console.screen import clear_screen, write_buffer_to_screen
 
 
 log = logging.getLogger()
@@ -95,9 +95,12 @@ def main_loop(terminal_nr, settings, it8951_driver_program):
 
 
 def assert_console_input_file_params(files):
-    for file in files:
-        if not os.path.isfile(file):
-            raise FileNotFoundError("Could not locate the file '{file}'.")
+    for name, path in files.items():
+        try:
+            if not os.path.isfile(path):
+                raise FileNotFoundError(f"Could not locate {name} '{path}'.")
+        except TypeError:
+            raise FileNotFoundError(f"Could not locate {name} '{path}'.")
 
 
 @click.command()
@@ -110,7 +113,10 @@ def main(terminal_nr, font_file, it8951_driver, rows, cols):
     assert terminal_nr
 
     assert_console_input_file_params(
-        [font_file, it8951_driver]
+        {
+            "Font-file": font_file,
+            "IT8951-driver-file": it8951_driver,
+        }
     )
 
     settings = ConsoleSettings(
@@ -122,6 +128,8 @@ def main(terminal_nr, font_file, it8951_driver, rows, cols):
         screen_width=1200,
         screen_height=825,
     )
+
+    clear_screen(settings.screen_height, settings.screen_width, it8951_driver)
 
     main_loop(terminal_nr, settings, it8951_driver)
 

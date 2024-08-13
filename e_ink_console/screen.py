@@ -30,8 +30,8 @@ def clear_screen(screen_height, screen_width, it_8951_driver_program):
         with open(os.path.join(temp_dir, "background.png"), "wb") as fb:
             image.save(fb)
             update_screen(
-                settings.screen_height,
-                settings.screen_width,
+                screen_height,
+                screen_width,
                 fb.name,
                 0,
                 0,
