@@ -15,8 +15,24 @@ log = logging.getLogger(__name__)
 @pytest.mark.parametrize(
     "rows,cols,test_bytes",
     [
-        [4, 8, b"\x1B[2J\x1B[H123456782xxxxxx*3xxxxxx*4xxxxxx*"],
-        [40, 80, b"\x1B[2J\x1B[H0        1         2         3         4         5         6         7         8\x1B[10;0H1\x1B[20;0H2\x1B[30;0H3\x1B[39;0H39"],
+        #[4, 8, b"\x1B[2J\x1B[H123456782xxxxxx*3xxxxxx*4xxxxxx*"],
+        [
+            40, 80,
+            b"\x1B[2J\x1B[H0        1         2         3         4         5         6         7         8\
+            \x1B[10;0H1\
+            \x1B[20;0H2_._._Hej,hej,hej\
+            \x1B[30;0H3\
+            \x1B[39;0H39\
+            \x1B[2;2Hxxx\x1B[3;2Hx x\x1B[4;2Hxxx\x1B[3;3H",
+        ],
+        [
+            40, 80,
+            b"\x1B[2J\x1B[0;0HCursor at 0,0\x1B[0;0H",
+        ],
+        [
+            40, 80,
+            b"\x1B[2J\x1B[0;0HCursor at 1,1\x1B[1;1H",
+        ],
     ],
 )
 def test_terminal_e2e(terminal_nr, it8951_driver, font_file,
@@ -34,7 +50,7 @@ def test_terminal_e2e(terminal_nr, it8951_driver, font_file,
     with open(f"/dev/tty{terminal_nr}", "wb") as file_buffer:
         fcntl.ioctl(file_buffer.fileno(), termios.TIOCSWINSZ, size)
 
-    #clear_screen(settings.screen_height, settings.screen_width, it8951_driver)
+    clear_screen(settings.screen_height, settings.screen_width, it8951_driver)
 
     with open(f"/dev/tty{terminal_nr}", "wb") as fb:
         fb.write(test_bytes)
@@ -49,12 +65,13 @@ def test_terminal_e2e(terminal_nr, it8951_driver, font_file,
 
     rows, cols, cursor_col, cursor_row = list(map(ord, struct.unpack('cccc', attributes)))
     cursor = (cursor_row, cursor_col)
+    log.info(f"The cursor is currently at row {cursor_row}, col {cursor_col}.")
 
     write_buffer_to_screen(
         settings=settings,
         old_buff=b"",
         buff=buff,
-        old_cursor=(-1, -1),
+        old_cursor=(9, 9),
         cursor=cursor,
         character_encoding_width=1,
         font=settings.font,
@@ -64,3 +81,4 @@ def test_terminal_e2e(terminal_nr, it8951_driver, font_file,
 
     log.info("Waiting a short moment to let you verify the screen...")
     time.sleep(2)
+    raise IOError

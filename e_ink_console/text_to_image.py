@@ -20,7 +20,6 @@ def get_terminal_update_image(buffer_list, text_area, cursor, font, font_height,
         to_print = (buffer_list[row][text_area[1]:text_area[3] + 1])
 
         r = (row - text_area[0]) * font_height
-        # Should this be text_area[1] * font_width?
         c = 0 * font_width
         log.debug(f"Printing @{r, c}: '{to_print}'")
 
@@ -32,14 +31,19 @@ def get_terminal_update_image(buffer_list, text_area, cursor, font, font_height,
             spacing=spacing,
         )
 
-    r = cursor[0] - text_area[0]
-    c = cursor[1] - text_area[1]
-    start = (r - 1) * font_height, c * font_width
-    end = (r + 1) * font_height, c * font_width
-    draw.line((start, end),
+    r = cursor[0] - text_area[0] + 1
+    c = cursor[1] - text_area[1] + 1
+    pos = [
+            ( c * font_width, r * font_height),
+            ((c + 1) * font_width, r * font_height),
+            ((c + 1.1) * font_width, r * font_height),
+            ((c + 1.1) * font_width, r * font_height),
+    ]
+    draw.line(pos,
         fill=BLACK,
     )
-    log.debug(f"Printing cursor @ {r, c }: {start, end}.")
+    log.debug(f"Text area 0 {text_area[0]} and 1 is {text_area[1]}")
+    log.debug(f"Printing cursor {cursor} @ {r, c }: {pos}.")
 
     return image
 
