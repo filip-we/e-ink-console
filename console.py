@@ -81,7 +81,7 @@ def main_loop(terminal_nr, settings, it8951_driver_program):
         cursor = (cursor_row, cursor_col) #, char_under_cursor.decode(encoding, 'ignore'))
 
         if buff == old_buff and cursor == old_cursor:
-            time.sleep(2)
+            time.sleep(0.1)
             continue
 
         log.debug(f"Cursor {cursor}, old cursor {old_cursor}.")
