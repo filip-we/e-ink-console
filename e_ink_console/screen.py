@@ -24,7 +24,7 @@ def update_screen(screen_height, screen_width, image_file_path, pos_height, pos_
         check=True,
     )
 
-def clear_screen(screen_height, screen_width, it_8951_driver_program):
+def clear_screen(screen_height, screen_width, it8951_driver):
     image = get_blank_image(screen_height, screen_width)
     with tempfile.TemporaryDirectory() as temp_dir:
         with open(os.path.join(temp_dir, "background.png"), "wb") as fb:
@@ -35,10 +35,10 @@ def clear_screen(screen_height, screen_width, it_8951_driver_program):
                 fb.name,
                 0,
                 0,
-                it_8951_driver_program,
+                it8951_driver,
             )
 
-def write_buffer_to_screen(settings, old_buff, buff, old_cursor, cursor, character_encoding_width, font, encoding, it_8951_driver_program):
+def write_buffer_to_screen(settings, old_buff, buff, old_cursor, cursor, character_encoding_width, font, encoding, it8951_driver):
     """Writes the buffer to the screen by decoding it, converting it to an image and sending it to the screen."""
     changed_sections = identify_changed_text_area(old_buff, buff, settings.rows, settings.cols)
     log.debug(f"changed_sections {changed_sections}")
@@ -65,5 +65,5 @@ def write_buffer_to_screen(settings, old_buff, buff, old_cursor, cursor, charact
                 fb.name,
                 contained_text_area[0] * settings.font_height,
                 contained_text_area[1] * settings.font_width,
-                    it_8951_driver_program,
+                    it8951_driver,
                 )
