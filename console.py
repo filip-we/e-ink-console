@@ -30,18 +30,19 @@ class ConsoleSettings():
         screen_width: int,
         screen_height: int,
         font_file: str,
-        font_height: int = 16,
-        font_width: int = 8,
+        font_size: int = 16,
     ):
         self.rows = rows
         self.cols = cols
         self.screen_width = screen_width
         self.screen_height = screen_height
-        self.font_file =  font_file
-        self.font_height = font_height
-        self.font_width = font_width
-        self.font = ImageFont.truetype(font_file, self.font_height)
 
+        self.font = ImageFont.truetype(font_file, font_size)
+        # Make an estimation of the font-width (as int) that on the large side.
+        # We don't want to accidentally write outside the scren.
+        self.font_width = int(self.font.getlength("1234567890") // 10) + 1
+        self.font_height = sum(self.font.getmetrics())
+        log.debug(f"Setting font width and height to: {self.font_width}, {self.font_height}")
 
 def setup(settings, tty, vcsa):
     # Check valid vcsa
@@ -123,8 +124,7 @@ def main(terminal_nr, font_file, it8951_driver, rows, cols):
         rows=rows,
         cols=cols,
         font_file=font_file,
-        font_height=16,
-        font_width=8,
+        font_size=8,
         screen_width=1200,
         screen_height=825,
     )

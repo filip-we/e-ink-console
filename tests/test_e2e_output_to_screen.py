@@ -15,7 +15,6 @@ log = logging.getLogger(__name__)
 @pytest.mark.parametrize(
     "rows,cols,test_bytes",
     [
-        #[4, 8, b"\x1B[2J\x1B[H123456782xxxxxx*3xxxxxx*4xxxxxx*"],
         [
             40, 80,
             b"\x1B[2J\x1B[H0        1         2         3         4         5         6         7         8\
@@ -27,11 +26,11 @@ log = logging.getLogger(__name__)
         ],
         [
             40, 80,
-            b"\x1B[2J\x1B[0;0HCursor at 0,0\x1B[0;0H",
+            b"\x1B[2J\x1B[0;0HCursor at 1,1\x1B[1;1H",
         ],
         [
             40, 80,
-            b"\x1B[2J\x1B[0;0HCursor at 1,1\x1B[1;1H",
+            b"\x1B[2J\x1B[H1234||\n..../?()gJ\nJJ||__^% ----\n||||",
         ],
     ],
 )
@@ -41,8 +40,7 @@ def test_terminal_e2e(terminal_nr, it8951_driver, font_file,
         rows=rows,
         cols=cols,
         font_file=font_file,
-        font_height=16,
-        font_width=8,
+        font_size=16,
         screen_width=1200,
         screen_height=825,
     )

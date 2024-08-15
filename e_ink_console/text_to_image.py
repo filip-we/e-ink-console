@@ -31,13 +31,13 @@ def get_terminal_update_image(buffer_list, text_area, cursor, font, font_height,
             spacing=spacing,
         )
 
-    r = cursor[0] - text_area[0] + 1
-    c = cursor[1] - text_area[1] + 1
+    r = cursor[0] - text_area[0]
+    c = cursor[1] - text_area[1]
     pos = [
-            ( c * font_width, r * font_height),
-            ((c + 1) * font_width, r * font_height),
-            ((c + 1.1) * font_width, r * font_height),
-            ((c + 1.1) * font_width, r * font_height),
+            ( c * font_width, (r + 0.9) * font_height),
+            ((c + 1) * font_width, (r + 0.9) * font_height),
+            ( c * font_width, (r + 1) * font_height),
+            ((c + 1) * font_width, (r + 1) * font_height),
     ]
     draw.line(pos,
         fill=BLACK,
