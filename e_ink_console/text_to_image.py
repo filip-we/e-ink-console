@@ -9,32 +9,32 @@ WHITE = 255
 
 log = logging.getLogger(__name__)
 
-def get_terminal_update_image(buffer_list, text_area, cursor, cursor_image, cursor_thickness, font, font_height, font_width, spacing=0):
+def get_terminal_update_image(settings, buffer_list, text_area, cursor, spacing=0):
     height = (text_area[2] - text_area[0] + 1)
     width = (text_area[3] - text_area[1] + 1)
-    log.debug(f"Producing image with height, width {height, width} characters or {height*font_height, width*font_width} px")
+    log.debug(f"Producing image with height, width {height, width} characters or {height*settings.font_height, width*settings.font_width} px")
 
-    image = Image.new('1', (width * font_width, height * font_height), WHITE)
+    image = Image.new('1', (width * settings.font_width, height * settings.font_height), WHITE)
     draw = ImageDraw.Draw(image)
     for row in range(text_area[0], text_area[2] + 1):
         to_print = (buffer_list[row][text_area[1]:text_area[3] + 1])
 
-        r = (row - text_area[0]) * font_height
-        c = 0 * font_width
+        r = (row - text_area[0]) * settings.font_height
+        c = 0 * settings.font_width
         log.debug(f"Printing @{r, c}: '{to_print}'")
 
         draw.text(
             (c, r),
             to_print,
-            font=font,
+            font=settings.font,
             fill=BLACK,
             spacing=spacing,
         )
 
-    image.paste(cursor_image,
+    image.paste(settings.cursor_image,
         (
-            (cursor[1] - text_area[1]) * font_width,
-            ((cursor[0] - text_area[0]) + cursor_thickness - 1) * font_height,
+            (cursor[1] - text_area[1]) * settings.font_width,
+            ((cursor[0] - text_area[0]) + settings.cursor_thickness - 1) * settings.font_height,
         ),
     )
 

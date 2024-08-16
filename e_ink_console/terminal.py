@@ -1,0 +1,100 @@
+import logging
+
+import fcntl
+import os
+import struct
+import termios
+import tempfile
+
+from PIL import Image, ImageFont
+
+log = logging.getLogger()
+
+class TerminalSettings():
+    def __init__(self,
+        tty: str,
+        vcsa: str,
+        rows: int,
+        cols: int,
+        screen_width: int,
+        screen_height: int,
+        font_file: str,
+        font_size: int,
+        encoding: str = "utf-8",
+    ):
+        self.tty = tty
+        self.vcsa = vcsa
+        self.rows = rows
+        self.cols = cols
+        self.screen_width = screen_width
+        self.screen_height = screen_height
+        self.font_file = font_file
+        self.font_size = font_size
+        self.encoding = encoding
+
+        self.verify_settings()
+        self.update_settings()
+
+
+    def verify_settings(self):
+        try:
+            os.stat(self.tty)
+        except OSError:
+            OSError("Error with or {self.tty}.")
+        try:
+            os.stat(self.vcsa)
+        except OSError:
+            OSError("Error with {self.vcsa}.")
+
+
+    def update_settings(self):
+        self.font = ImageFont.truetype(self.font_file, self.font_size)
+        # Make an estimation of the font-width (as int) that on the large side.
+        # We don't want to accidentally write outside the scren.
+        self.font_width = int(self.font.getlength("1234567890") // 10) + 1
+        self.font_height = sum(self.font.getmetrics())
+        log.debug(f"Setting font width and height to: {self.font_width}, {self.font_height}")
+
+        # Define the cursor here so we don't need to recreate it with every draw
+        self.cursor_thickness = int(round(0.1 * self.font_height)) or 1
+        self.cursor_image = Image.new('1',
+            (self.font_width, self.cursor_thickness),
+            0,
+        )
+        log.debug(f"Cursor dimensions are set to {self.cursor_thickness} x {self.font_width}.")
+
+        try:
+            size = struct.pack("HHHH", self.rows, self.cols, 0, 0)
+            with open(self.tty, 'wb') as file_buffer:
+                fcntl.ioctl(file_buffer.fileno(), termios.TIOCSWINSZ, size)
+        except OSError as e:
+            log.critical(f"Could not set terminal size: {e}")
+
+
+def main_loop(settings, it8951_driver_program):
+    character_encoding_width = 1
+    old_buff = b''
+    old_cursor = (-1, -1)
+
+    while True:
+        with open(settings.vcsa.replace("vcsa", "vcs"), 'rb') as vcsu_buffer:
+            buff = vcsu_buffer.read()
+
+        with open(settings.vcsa, 'rb') as vcsa_buffer:
+            attributes = vcsa_buffer.read(4)
+
+        rows, cols, cursor_col, cursor_row = list(map(ord, struct.unpack('cccc', attributes)))
+        cursor = (cursor_row, cursor_col)
+
+        if buff == old_buff and cursor == old_cursor:
+            time.sleep(0.1)
+            continue
+
+        log.debug(f"Cursor {cursor}, old cursor {old_cursor}.")
+        log.debug(f"Buff length {len(buff)}")
+        log.debug(f"Rows, cols: {rows, cols}")
+
+        write_buffer_to_screen(settings, old_buff, buff, old_cursor, cursor, character_encoding_width, it8951_driver_program)
+
+        old_buff = buff
+        old_cursor = cursor

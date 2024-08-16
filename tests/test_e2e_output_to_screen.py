@@ -8,7 +8,7 @@ import time
 import struct
 
 from e_ink_console.screen import clear_screen, write_buffer_to_screen
-from console import ConsoleSettings, main_loop
+from e_ink_console.terminal import TerminalSettings, main_loop
 
 log = logging.getLogger(__name__)
 
@@ -36,7 +36,9 @@ log = logging.getLogger(__name__)
 )
 def test_terminal_e2e(terminal_nr, it8951_driver, font_file,
     rows, cols, test_bytes):
-    settings = ConsoleSettings(
+    settings = TerminalSettings(
+        tty=f"/dev/tty{terminal_nr}",
+        vcsa=f"/dev/vcsa{terminal_nr}",
         rows=rows,
         cols=cols,
         font_file=font_file,
@@ -52,8 +54,6 @@ def test_terminal_e2e(terminal_nr, it8951_driver, font_file,
 
     with open(f"/dev/tty{terminal_nr}", "wb") as fb:
         fb.write(test_bytes)
-
-    time.sleep(1.8)
 
     with open(f"/dev/vcs{terminal_nr}", 'rb') as vcsu_buffer:
         buff = vcsu_buffer.read()
@@ -72,11 +72,8 @@ def test_terminal_e2e(terminal_nr, it8951_driver, font_file,
         old_cursor=(9, 9),
         cursor=cursor,
         character_encoding_width=1,
-        font=settings.font,
-        encoding="utf-8",
         it8951_driver=it8951_driver,
     )
 
     log.info("Waiting a short moment to let you verify the screen...")
     time.sleep(2)
-    raise IOError
