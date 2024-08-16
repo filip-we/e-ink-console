@@ -52,6 +52,8 @@ def write_buffer_to_screen(settings, old_buff, buff, old_cursor, cursor, charact
         decoded_buff_list,
         contained_text_area,
         cursor,
+        settings.cursor_image,
+        settings.cursor_thickness,
         font,
         settings.font_height,
         settings.font_width,

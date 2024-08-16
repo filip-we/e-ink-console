@@ -9,7 +9,7 @@ WHITE = 255
 
 log = logging.getLogger(__name__)
 
-def get_terminal_update_image(buffer_list, text_area, cursor, font, font_height, font_width, spacing=0):
+def get_terminal_update_image(buffer_list, text_area, cursor, cursor_image, cursor_thickness, font, font_height, font_width, spacing=0):
     height = (text_area[2] - text_area[0] + 1)
     width = (text_area[3] - text_area[1] + 1)
     log.debug(f"Producing image with height, width {height, width} characters or {height*font_height, width*font_width} px")
@@ -31,19 +31,12 @@ def get_terminal_update_image(buffer_list, text_area, cursor, font, font_height,
             spacing=spacing,
         )
 
-    r = cursor[0] - text_area[0]
-    c = cursor[1] - text_area[1]
-    pos = [
-            ( c * font_width, (r + 0.9) * font_height),
-            ((c + 1) * font_width, (r + 0.9) * font_height),
-            ( c * font_width, (r + 1) * font_height),
-            ((c + 1) * font_width, (r + 1) * font_height),
-    ]
-    draw.line(pos,
-        fill=BLACK,
+    image.paste(cursor_image,
+        (
+            (cursor[1] - text_area[1]) * font_width,
+            ((cursor[0] - text_area[0]) + cursor_thickness - 1) * font_height,
+        ),
     )
-    log.debug(f"Text area 0 {text_area[0]} and 1 is {text_area[1]}")
-    log.debug(f"Printing cursor {cursor} @ {r, c }: {pos}.")
 
     return image
 

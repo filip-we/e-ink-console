@@ -9,7 +9,7 @@ import termios
 import tempfile
 import time
 
-from PIL import ImageFont
+from PIL import Image, ImageFont
 
 from e_ink_console.screen import clear_screen, write_buffer_to_screen
 
@@ -43,6 +43,15 @@ class ConsoleSettings():
         self.font_width = int(self.font.getlength("1234567890") // 10) + 1
         self.font_height = sum(self.font.getmetrics())
         log.debug(f"Setting font width and height to: {self.font_width}, {self.font_height}")
+
+        # Define the cursor here so we don't need to recreate it with every draw
+        self.cursor_thickness = int(round(0.1 * self.font_height)) or 1
+        self.cursor_image = Image.new('1',
+            (self.font_width, self.cursor_thickness),
+            0,
+        )
+        log.debug(f"Cursor dimensions are set to {self.cursor_thickness} x {self.font_width}.")
+
 
 def setup(settings, tty, vcsa):
     # Check valid vcsa
