@@ -4,10 +4,9 @@ import click
 import os
 import struct
 import sys
-import time
 
-from e_ink_console.screen import clear_screen, write_buffer_to_screen
-from e_ink_console.terminal import TerminalSettings
+from e_ink_console.screen import clear_screen
+from e_ink_console.terminal import TerminalSettings, main_loop
 
 log = logging.getLogger()
 log.setLevel(logging.DEBUG)
@@ -32,8 +31,8 @@ def assert_console_input_file_params(files):
 @click.option("--font-file", help="Path to a font-file.")
 @click.option("--font-size", help="Size of font, in pixles.", default=16)
 @click.option("--it8951-driver", help="Name of driver-executable.")
-@click.option("--rows", default=40)
-@click.option("--cols", default=80)
+@click.option("--rows", default=0)
+@click.option("--cols", default=0)
 def main(terminal_nr, font_file, font_size, it8951_driver, rows, cols):
     assert terminal_nr
 

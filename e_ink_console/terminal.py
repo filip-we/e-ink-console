@@ -5,8 +5,11 @@ import os
 import struct
 import termios
 import tempfile
+import time
 
 from PIL import Image, ImageFont
+
+from e_ink_console.screen import write_buffer_to_screen
 
 log = logging.getLogger()
 
@@ -14,18 +17,16 @@ class TerminalSettings():
     def __init__(self,
         tty: str,
         vcsa: str,
-        rows: int,
-        cols: int,
         screen_width: int,
         screen_height: int,
         font_file: str,
         font_size: int,
         encoding: str = "utf-8",
+        rows: int = 0,
+        cols: int = 0,
     ):
         self.tty = tty
         self.vcsa = vcsa
-        self.rows = rows
-        self.cols = cols
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.font_file = font_file
@@ -33,7 +34,7 @@ class TerminalSettings():
         self.encoding = encoding
 
         self.verify_settings()
-        self.update_settings()
+        self.update_settings(rows, cols)
 
 
     def verify_settings(self):
@@ -47,13 +48,22 @@ class TerminalSettings():
             OSError("Error with {self.vcsa}.")
 
 
-    def update_settings(self):
+    def update_settings(self, rows, cols):
         self.font = ImageFont.truetype(self.font_file, self.font_size)
         # Make an estimation of the font-width (as int) that on the large side.
         # We don't want to accidentally write outside the scren.
         self.font_width = int(self.font.getlength("1234567890") // 10) + 1
         self.font_height = sum(self.font.getmetrics())
-        log.debug(f"Setting font width and height to: {self.font_width}, {self.font_height}")
+        log.info(f"Setting font width and height to: {self.font_width}, {self.font_height}")
+
+        self.rows = rows or int(self.screen_height / self.font_height)
+        self.cols = cols or int(self.screen_width / self.font_width)
+        log.info(f"Calculated number of rows to {self.rows}  and number of columns to {self.cols}.")
+
+        residual_height_margin = self.screen_height - self.rows * self.font_height
+        residual_width_margin = self.screen_width - self.cols * self.font_width
+        self.residual_margins = (residual_height_margin, residual_width_margin)
+        log.info(f"Residual pixels in height is {self.residual_margins[0]} and width is {self.residual_margins[1]}")
 
         # Define the cursor here so we don't need to recreate it with every draw
         self.cursor_thickness = int(round(0.1 * self.font_height)) or 1
@@ -68,7 +78,9 @@ class TerminalSettings():
             with open(self.tty, 'wb') as file_buffer:
                 fcntl.ioctl(file_buffer.fileno(), termios.TIOCSWINSZ, size)
         except OSError as e:
-            log.critical(f"Could not set terminal size: {e}")
+            log.critical(f"Could not set terminal size: {e}. Using default values.")
+            self.rows = 20
+            self.cols = 80
 
 
 def main_loop(settings, it8951_driver_program):
