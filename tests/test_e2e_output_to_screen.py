@@ -7,10 +7,20 @@ import os
 import time
 import struct
 
+from PIL import Image, ImageDraw
+
 from e_ink_console.screen import clear_screen, write_buffer_to_screen
 from e_ink_console.terminal import TerminalSettings, main_loop
 
+from e_ink_console.text_to_image import (
+    get_terminal_update_image,
+)
 log = logging.getLogger(__name__)
+
+log = logging.getLogger(__name__)
+
+
+TESTS_DIR = os.path.abspath(os.path.join(__file__, os.pardir))
 
 @pytest.mark.parametrize(
     "rows,cols,test_bytes",
@@ -77,3 +87,68 @@ def test_terminal_e2e(terminal_nr, it8951_driver, font_file,
 
     log.info("Waiting a short moment to let you verify the screen...")
     time.sleep(2)
+
+
+@pytest.mark.parametrize(
+    "name,text_area",
+    [
+        ["all_screen", (0, 0, 3, 9)],
+        ["start_of_row_0", (0, 0, 0, 2)],
+        ["middle_of_row_0", (0, 2, 0, 4)],
+    ],
+)
+def test_font_drawing(font_file, name, text_area):
+    settings = TerminalSettings(
+        tty="/dev/tty9999",
+        vcsa="/dev/vcsa9999",
+        rows=4,
+        cols=10,
+        font_file=font_file,
+        font_size=16,
+        screen_width=1200,
+        screen_height=825,
+    )
+
+    buffer_list = [
+        "abcdefghij",
+        "          ",
+        "0123456789",
+        "          ",
+    ]
+
+    image = get_terminal_update_image(
+        settings=settings,
+        buffer_list=buffer_list,
+        text_area=text_area,
+        cursor=(0, 0),
+        spacing=0,
+    )
+
+    with open(os.path.join(TESTS_DIR, "output", name + ".png"), "wb") as fb:
+        image.save(fb)
+
+
+def test_simple_text(font_file):
+    """Play ground to explore spacing between characters and difference in spacing when
+    writing one whole row, or writing a part of it.
+    """
+    settings = TerminalSettings(
+        tty="/dev/tty9999",
+        vcsa="/dev/vcsa9999",
+        rows=4,
+        cols=10,
+        font_file=font_file,
+        font_size=16,
+        screen_width=100,
+        screen_height=40,
+    )
+    image = Image.new('1', (width * settings.font_width, height * settings.font_height), 5)
+    draw = ImageDraw.Draw(image)
+
+    draw.text(
+            (0, 0),
+            to_print,
+            font=settings.font,
+            fill=BLACK,
+            spacing=spacing,
+        )
