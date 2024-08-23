@@ -5,9 +5,11 @@ import subprocess
 import tempfile
 
 from .text_to_image import (
+    crop_image,
     get_contained_text_area,
     get_blank_image,
-    get_terminal_update_image,
+    get_full_terminal_image,
+    get_partial_terminal_image,
     identify_changed_text_area,
 )
 log = logging.getLogger(__name__)
@@ -48,20 +50,23 @@ def write_buffer_to_screen(settings, old_buff, buff, old_cursor, cursor, charact
 
     decoded_buff_list = split(buff.decode(settings.encoding, "replace"), settings.cols * character_encoding_width)
 
-    image = get_terminal_update_image(
-        settings,
-        decoded_buff_list,
-        contained_text_area,
-        cursor,
-    )
+    image = get_full_terminal_image(settings, decoded_buff_list, cursor)
+
+    image = crop_image(settings, image, contained_text_area)
+
+    # For debugging
+    with open("buffer.png", "wb") as fb:
+        image.save(fb)
+
     with tempfile.TemporaryDirectory() as temp_dir:
         with open(os.path.join(temp_dir, "buffer.png"), "wb") as fb:
             image.save(fb)
+
             update_screen(
                 settings.screen_height,
                 settings.screen_width,
                 fb.name,
                 contained_text_area[0] * settings.font_height,
                 contained_text_area[1] * settings.font_width,
-                    it8951_driver,
-                )
+                it8951_driver,
+            )
