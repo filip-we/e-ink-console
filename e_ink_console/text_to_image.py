@@ -10,14 +10,10 @@ WHITE = 255
 log = logging.getLogger(__name__)
 
 def get_full_terminal_image(settings, buffer_list, cursor, spacing=0):
-    image = Image.new(
-        '1',
-        (
-            settings.cols * settings.font_width,
-            settings.rows * settings.font_height,
-        ),
-        WHITE,
-    )
+    width = settings.cols * settings.font_width
+    height = settings.rows * settings.font_height
+    image = Image.new('1', (width, height), WHITE)
+    log.debug(f"Creating image with dimensions {width} x {height}.")
 
     draw = ImageDraw.Draw(image)
     for row in range(settings.rows):
@@ -131,8 +127,8 @@ def crop_image(settings, image, text_area):
         text_area[0] * settings.font_height,
     ]
     lower_right = [
-        (text_area[3] + 0) * settings.font_width,
-        text_area[2] * settings.font_height,
+        min((text_area[3] + 1), settings.cols) * settings.font_width,
+        min((text_area[2] + 1), settings.rows) * settings.font_height,
     ]
-
+    log.debug(f"Cropping image to corners {upper_left} and {lower_right}.")
     return image.crop(upper_left + lower_right)
