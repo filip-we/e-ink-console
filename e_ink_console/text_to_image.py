@@ -9,7 +9,33 @@ WHITE = 255
 
 log = logging.getLogger(__name__)
 
-def get_terminal_update_image(settings, buffer_list, text_area, cursor, spacing=0):
+def get_full_terminal_image(settings, buffer_list, cursor, spacing=0):
+    width = settings.cols * settings.font_width
+    height = settings.rows * settings.font_height
+    image = Image.new('1', (width, height), WHITE)
+    log.debug(f"Creating image with dimensions {width} x {height}.")
+
+    draw = ImageDraw.Draw(image)
+    for row in range(settings.rows):
+
+        draw.text(
+            (0, row * settings.font_height),
+            buffer_list[row],
+            font=settings.font,
+            fill=BLACK,
+            spacing=spacing,
+        )
+    image.paste(settings.cursor_image,
+        (
+            cursor[1] * settings.font_width,
+            (cursor[0] + settings.cursor_thickness - 1) * settings.font_height,
+        ),
+    )
+
+    return image
+
+
+def get_partial_terminal_image(settings, buffer_list, text_area, cursor, spacing=0):
     height = (text_area[2] - text_area[0] + 1)
     width = (text_area[3] - text_area[1] + 1)
     log.debug(f"Producing image with height, width {height, width} characters or {height*settings.font_height, width*settings.font_width} px")
@@ -21,7 +47,6 @@ def get_terminal_update_image(settings, buffer_list, text_area, cursor, spacing=
 
         r = (row - text_area[0]) * settings.font_height
         c = 0 * settings.font_width
-        log.debug(f"Printing @{r, c}: '{to_print}'")
 
         draw.text(
             (c, r),
@@ -94,3 +119,16 @@ def get_contained_text_area(row_sections, old_cursor, new_cursor):
         col_max = max(col_max, old_cursor_col, new_cursor[1])
 
     return (row_min, col_min, row_max, col_max)
+
+def crop_image(settings, image, text_area):
+    """Takes a PIL-image and returns a cropped image on the section described in text_area. text_area is given in rows and columns."""
+    upper_left = [
+        text_area[1] * settings.font_width,
+        text_area[0] * settings.font_height,
+    ]
+    lower_right = [
+        min((text_area[3] + 1), settings.cols) * settings.font_width,
+        min((text_area[2] + 1), settings.rows) * settings.font_height,
+    ]
+    log.debug(f"Cropping image to corners {upper_left} and {lower_right}.")
+    return image.crop(upper_left + lower_right)
