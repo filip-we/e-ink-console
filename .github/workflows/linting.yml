@@ -1,6 +1,10 @@
 name: Python Linting
 
-on: [push, workflow_dispatch]
+on:
+  push:
+    branches:
+      - '**'
+      - '!main'
 
 jobs:
   ruff:
