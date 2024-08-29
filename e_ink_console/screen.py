@@ -3,6 +3,9 @@ import logging
 import os
 import subprocess
 import tempfile
+import time
+
+from enum import Enum
 
 from .text_to_image import (
     crop_image,
@@ -15,20 +18,52 @@ from .text_to_image import (
 log = logging.getLogger(__name__)
 
 
+class ScreenUpdateMode(Enum):
+    INIT = 0
+    DU = 1
+    GC16 = 2  # GC = grey scale
+    GL16 = 3
+    GLR16 = 4
+    GLD16 = 5
+    DU4 = 6
+    A2 = 7  # Fast mode
+    UNKNOWN1 = 8
+
+
 def split(s, n):
     return [s[i : i + n] for i in range(0, len(s), n)]
 
 
 def update_screen(
-    screen_height, screen_width, image_file_path, pos_height, pos_width, program
+    screen_height,
+    screen_width,
+    image_file_path,
+    pos_height,
+    pos_width,
+    program,
+    mode=ScreenUpdateMode.GL16,
 ):
-    cmd = [program, image_file_path, str(pos_width), str(pos_height)]
+    cmd = [program, image_file_path, str(pos_width), str(pos_height), str(mode.value)]
     log.debug(f"Calling IT8951-drivers with arguments: {cmd}")
-    subprocess.run(
-        " ".join(cmd),
-        shell=True,
-        check=True,
-    )
+
+    retries = 0
+    total_retries = 3
+    while retries < total_retries:
+        try:
+            subprocess.run(
+                " ".join(cmd),
+                shell=True,
+                check=True,
+            )
+            return
+        except subprocess.CalledProcessError:
+            log.warning(
+                "Attempt {retries} out of {total_retries} to communicate with screen failed!"
+            )
+        finally:
+            retries += 1
+            time.sleep(1)
+    raise subprocess.CalledProcessError("Failed to communicate with screen!")
 
 
 def clear_screen(screen_height, screen_width, it8951_driver):
@@ -54,6 +89,7 @@ def write_buffer_to_screen(
     cursor,
     character_encoding_width,
     it8951_driver,
+    full_update=True,
 ):
     """Writes the buffer to the screen by decoding it, converting it to an image and sending it to the screen."""
     changed_sections = identify_changed_text_area(
@@ -71,7 +107,17 @@ def write_buffer_to_screen(
 
     image = get_full_terminal_image(settings, decoded_buff_list, cursor)
 
-    image = crop_image(settings, image, contained_text_area)
+    if full_update:
+        log.debug("Doing a FULL update!")
+        y_pos = 0
+        x_pos = 0
+        mode = ScreenUpdateMode.GC16
+    else:
+        log.debug("Doing a partial update!")
+        image = crop_image(settings, image, contained_text_area)
+        y_pos = contained_text_area[0] * settings.font_height
+        x_pos = contained_text_area[1] * settings.font_width
+        mode = ScreenUpdateMode.A2
 
     # For debugging
     with open("buffer.png", "wb") as fb:
@@ -85,7 +131,8 @@ def write_buffer_to_screen(
                 settings.screen_height,
                 settings.screen_width,
                 fb.name,
-                contained_text_area[0] * settings.font_height,
-                contained_text_area[1] * settings.font_width,
+                y_pos,
+                x_pos,
                 it8951_driver,
+                mode,
             )

@@ -25,6 +25,7 @@ class TerminalSettings:
         encoding: str = "utf-8",
         rows: int = 0,
         cols: int = 0,
+        full_update_interval=10,
     ):
         self.tty = tty
         self.vcsa = vcsa
@@ -33,6 +34,7 @@ class TerminalSettings:
         self.font_file = font_file
         self.font_size = font_size
         self.encoding = encoding
+        self.full_update_interval = full_update_interval
 
         self.verify_settings()
         self.update_settings(rows, cols)
@@ -96,6 +98,7 @@ def main_loop(settings, it8951_driver_program):
     old_buff = b""
     old_cursor = (-1, -1)
 
+    last_full_update = time.time()
     while True:
         with open(settings.vcsa.replace("vcsa", "vcs"), "rb") as vcsu_buffer:
             buff = vcsu_buffer.read()
@@ -116,6 +119,13 @@ def main_loop(settings, it8951_driver_program):
         log.debug(f"Buff length {len(buff)}")
         log.debug(f"Rows, cols: {rows, cols}")
 
+        now = time.time()
+        if (now - last_full_update) > settings.full_update_interval:
+            full_update = True
+            last_full_update = now
+        else:
+            full_update = False
+
         write_buffer_to_screen(
             settings,
             old_buff,
@@ -124,6 +134,7 @@ def main_loop(settings, it8951_driver_program):
             cursor,
             character_encoding_width,
             it8951_driver_program,
+            full_update,
         )
 
         old_buff = buff
