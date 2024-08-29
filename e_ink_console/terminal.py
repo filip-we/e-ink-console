@@ -4,7 +4,6 @@ import fcntl
 import os
 import struct
 import termios
-import tempfile
 import time
 
 from PIL import Image, ImageFont
@@ -13,8 +12,10 @@ from e_ink_console.screen import write_buffer_to_screen
 
 log = logging.getLogger()
 
-class TerminalSettings():
-    def __init__(self,
+
+class TerminalSettings:
+    def __init__(
+        self,
         tty: str,
         vcsa: str,
         screen_width: int,
@@ -36,7 +37,6 @@ class TerminalSettings():
         self.verify_settings()
         self.update_settings(rows, cols)
 
-
     def verify_settings(self):
         try:
             os.stat(self.tty)
@@ -47,35 +47,43 @@ class TerminalSettings():
         except OSError:
             OSError("Error with {self.vcsa}.")
 
-
     def update_settings(self, rows, cols):
         self.font = ImageFont.truetype(self.font_file, self.font_size)
         # Make an estimation of the font-width (as int) that on the large side.
         # We don't want to accidentally write outside the scren.
         self.font_width = int(self.font.getlength("1234567890") // 10) + 1
         self.font_height = sum(self.font.getmetrics())
-        log.info(f"Setting font width and height to: {self.font_width}, {self.font_height}")
+        log.info(
+            f"Setting font width and height to: {self.font_width}, {self.font_height}"
+        )
 
         self.rows = rows or int(self.screen_height / self.font_height)
         self.cols = cols or int(self.screen_width / self.font_width)
-        log.info(f"Calculated number of rows to {self.rows}  and number of columns to {self.cols}.")
+        log.info(
+            f"Calculated number of rows to {self.rows}  and number of columns to {self.cols}."
+        )
 
         residual_height_margin = self.screen_height - self.rows * self.font_height
         residual_width_margin = self.screen_width - self.cols * self.font_width
         self.residual_margins = (residual_height_margin, residual_width_margin)
-        log.info(f"Residual pixels in height is {self.residual_margins[0]} and width is {self.residual_margins[1]}")
+        log.info(
+            f"Residual pixels in height is {self.residual_margins[0]} and width is {self.residual_margins[1]}"
+        )
 
         # Define the cursor here so we don't need to recreate it with every draw
         self.cursor_thickness = int(round(0.1 * self.font_height)) or 1
-        self.cursor_image = Image.new('1',
+        self.cursor_image = Image.new(
+            "1",
             (self.font_width, self.cursor_thickness),
             0,
         )
-        log.debug(f"Cursor dimensions are set to {self.cursor_thickness} x {self.font_width}.")
+        log.debug(
+            f"Cursor dimensions are set to {self.cursor_thickness} x {self.font_width}."
+        )
 
         try:
             size = struct.pack("HHHH", self.rows, self.cols, 0, 0)
-            with open(self.tty, 'wb') as file_buffer:
+            with open(self.tty, "wb") as file_buffer:
                 fcntl.ioctl(file_buffer.fileno(), termios.TIOCSWINSZ, size)
         except OSError as e:
             log.critical(f"Could not set terminal size: {e}. Using default values.")
@@ -85,17 +93,19 @@ class TerminalSettings():
 
 def main_loop(settings, it8951_driver_program):
     character_encoding_width = 1
-    old_buff = b''
+    old_buff = b""
     old_cursor = (-1, -1)
 
     while True:
-        with open(settings.vcsa.replace("vcsa", "vcs"), 'rb') as vcsu_buffer:
+        with open(settings.vcsa.replace("vcsa", "vcs"), "rb") as vcsu_buffer:
             buff = vcsu_buffer.read()
 
-        with open(settings.vcsa, 'rb') as vcsa_buffer:
+        with open(settings.vcsa, "rb") as vcsa_buffer:
             attributes = vcsa_buffer.read(4)
 
-        rows, cols, cursor_col, cursor_row = list(map(ord, struct.unpack('cccc', attributes)))
+        rows, cols, cursor_col, cursor_row = list(
+            map(ord, struct.unpack("cccc", attributes))
+        )
         cursor = (cursor_row, cursor_col)
 
         if buff == old_buff and cursor == old_cursor:
@@ -106,7 +116,15 @@ def main_loop(settings, it8951_driver_program):
         log.debug(f"Buff length {len(buff)}")
         log.debug(f"Rows, cols: {rows, cols}")
 
-        write_buffer_to_screen(settings, old_buff, buff, old_cursor, cursor, character_encoding_width, it8951_driver_program)
+        write_buffer_to_screen(
+            settings,
+            old_buff,
+            buff,
+            old_cursor,
+            cursor,
+            character_encoding_width,
+            it8951_driver_program,
+        )
 
         old_buff = buff
         old_cursor = cursor
