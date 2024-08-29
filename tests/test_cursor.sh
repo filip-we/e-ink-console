@@ -11,6 +11,7 @@ TESTS=(
 "${CLEAR}\033[0;0H0        1         2         3         4         5         6         7         8\033[10;0H1\033[20;0H2\033[30;0H3\033[39;0H39"
 "hej hej"
 "hej igen"
+"${CLEAR}${CURSOR_HOME}Let's clean the screen and write some stuff."
 )
 
 for string in "${TESTS[@]}"
