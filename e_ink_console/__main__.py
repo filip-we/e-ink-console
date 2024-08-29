@@ -2,8 +2,6 @@ import logging
 
 import click
 import os
-import struct
-import sys
 
 from e_ink_console.screen import clear_screen
 from e_ink_console.terminal import TerminalSettings, main_loop
@@ -13,7 +11,9 @@ log.setLevel(logging.DEBUG)
 
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
-ch.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+ch.setFormatter(
+    logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+)
 log.addHandler(ch)
 
 
@@ -57,5 +57,6 @@ def main(terminal_nr, font_file, font_size, it8951_driver, rows, cols):
     clear_screen(settings.screen_height, settings.screen_width, it8951_driver)
 
     main_loop(settings, it8951_driver)
+
 
 main()

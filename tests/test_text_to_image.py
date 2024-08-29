@@ -1,6 +1,10 @@
 import pytest
 
-from e_ink_console.text_to_image import get_contained_text_area, identify_changed_text_area
+from e_ink_console.text_to_image import (
+    get_contained_text_area,
+    identify_changed_text_area,
+)
+
 
 @pytest.mark.parametrize(
     "old,new,changed",
@@ -25,5 +29,5 @@ def test_identify_changed_text_area(old, new, changed):
     ],
 )
 def test_get_contained_text_area(sections, expected):
-    actual = get_contained_text_area(sections, (0,0), (0,0))
+    actual = get_contained_text_area(sections, (0, 0), (0, 0))
     assert actual == expected

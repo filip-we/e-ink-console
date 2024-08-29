@@ -9,15 +9,15 @@ WHITE = 255
 
 log = logging.getLogger(__name__)
 
+
 def get_full_terminal_image(settings, buffer_list, cursor, spacing=0):
     width = settings.cols * settings.font_width
     height = settings.rows * settings.font_height
-    image = Image.new('1', (width, height), WHITE)
+    image = Image.new("1", (width, height), WHITE)
     log.debug(f"Creating image with dimensions {width} x {height}.")
 
     draw = ImageDraw.Draw(image)
     for row in range(settings.rows):
-
         draw.text(
             (0, row * settings.font_height),
             buffer_list[row],
@@ -25,7 +25,8 @@ def get_full_terminal_image(settings, buffer_list, cursor, spacing=0):
             fill=BLACK,
             spacing=spacing,
         )
-    image.paste(settings.cursor_image,
+    image.paste(
+        settings.cursor_image,
         (
             cursor[1] * settings.font_width,
             (cursor[0] + settings.cursor_thickness - 1) * settings.font_height,
@@ -36,14 +37,18 @@ def get_full_terminal_image(settings, buffer_list, cursor, spacing=0):
 
 
 def get_partial_terminal_image(settings, buffer_list, text_area, cursor, spacing=0):
-    height = (text_area[2] - text_area[0] + 1)
-    width = (text_area[3] - text_area[1] + 1)
-    log.debug(f"Producing image with height, width {height, width} characters or {height*settings.font_height, width*settings.font_width} px")
+    height = text_area[2] - text_area[0] + 1
+    width = text_area[3] - text_area[1] + 1
+    log.debug(
+        f"Producing image with height, width {height, width} characters or {height*settings.font_height, width*settings.font_width} px"
+    )
 
-    image = Image.new('1', (width * settings.font_width, height * settings.font_height), WHITE)
+    image = Image.new(
+        "1", (width * settings.font_width, height * settings.font_height), WHITE
+    )
     draw = ImageDraw.Draw(image)
     for row in range(text_area[0], text_area[2] + 1):
-        to_print = (buffer_list[row][text_area[1]:text_area[3] + 1])
+        to_print = buffer_list[row][text_area[1] : text_area[3] + 1]
 
         r = (row - text_area[0]) * settings.font_height
         c = 0 * settings.font_width
@@ -56,18 +61,21 @@ def get_partial_terminal_image(settings, buffer_list, text_area, cursor, spacing
             spacing=spacing,
         )
 
-    image.paste(settings.cursor_image,
+    image.paste(
+        settings.cursor_image,
         (
             (cursor[1] - text_area[1]) * settings.font_width,
-            ((cursor[0] - text_area[0]) + settings.cursor_thickness - 1) * settings.font_height,
+            ((cursor[0] - text_area[0]) + settings.cursor_thickness - 1)
+            * settings.font_height,
         ),
     )
 
     return image
 
+
 @functools.cache
 def get_blank_image(screen_height, screen_width, background_color=WHITE):
-    return Image.new('1', (screen_width, screen_height), background_color)
+    return Image.new("1", (screen_width, screen_height), background_color)
 
 
 def identify_changed_text_area(old, new, rows, cols):
@@ -80,8 +88,8 @@ def identify_changed_text_area(old, new, rows, cols):
 
     diff_entries = []
     for row in range(rows):
-        old_row_data = old[row * cols:(row + 1) * cols]
-        new_row_data = new[row * cols:(row + 1) * cols]
+        old_row_data = old[row * cols : (row + 1) * cols]
+        new_row_data = new[row * cols : (row + 1) * cols]
         diff = [x == y for x, y in zip(old_row_data, new_row_data)]
         try:
             first_diff = diff.index(False)
@@ -119,6 +127,7 @@ def get_contained_text_area(row_sections, old_cursor, new_cursor):
         col_max = max(col_max, old_cursor_col, new_cursor[1])
 
     return (row_min, col_min, row_max, col_max)
+
 
 def crop_image(settings, image, text_area):
     """Takes a PIL-image and returns a cropped image on the section described in text_area. text_area is given in rows and columns."""

@@ -7,14 +7,14 @@ import os
 import time
 import struct
 
-from PIL import Image, ImageDraw
 
 from e_ink_console.screen import clear_screen, write_buffer_to_screen
-from e_ink_console.terminal import TerminalSettings, main_loop
+from e_ink_console.terminal import TerminalSettings
 
 from e_ink_console.text_to_image import (
     get_partial_terminal_image,
 )
+
 log = logging.getLogger(__name__)
 
 log = logging.getLogger(__name__)
@@ -22,30 +22,33 @@ log = logging.getLogger(__name__)
 
 TESTS_DIR = os.path.abspath(os.path.join(__file__, os.pardir))
 
+
 @pytest.mark.parametrize(
     "rows,cols,test_bytes",
     [
         [
-            40, 80,
-            b"\x1B[2J\x1B[H0        1         2         3         4         5         6         7         8\
-            \x1B[10;0H1\
-            \x1B[20;0H2_._._Hej,hej,hej\
-            \x1B[30;0H3\
-            \x1B[39;0H39\
-            \x1B[2;2Hxxx\x1B[3;2Hx x\x1B[4;2Hxxx\x1B[3;3H",
+            40,
+            80,
+            b"\x1b[2J\x1b[H0        1         2         3         4         5         6         7         8\
+            \x1b[10;0H1\
+            \x1b[20;0H2_._._Hej,hej,hej\
+            \x1b[30;0H3\
+            \x1b[39;0H39\
+            \x1b[2;2Hxxx\x1b[3;2Hx x\x1b[4;2Hxxx\x1b[3;3H",
         ],
         [
-            40, 80,
-            b"\x1B[2J\x1B[0;0HCursor at 1,1\x1B[1;1H",
+            40,
+            80,
+            b"\x1b[2J\x1b[0;0HCursor at 1,1\x1b[1;1H",
         ],
         [
-            40, 80,
-            b"\x1B[2J\x1B[H1234||\n..../?()gJ\nJJ||__^% ----\n||||",
+            40,
+            80,
+            b"\x1b[2J\x1b[H1234||\n..../?()gJ\nJJ||__^% ----\n||||",
         ],
     ],
 )
-def test_terminal_e2e(terminal_nr, it8951_driver, font_file,
-    rows, cols, test_bytes):
+def test_terminal_e2e(terminal_nr, it8951_driver, font_file, rows, cols, test_bytes):
     settings = TerminalSettings(
         tty=f"/dev/tty{terminal_nr}",
         vcsa=f"/dev/vcsa{terminal_nr}",
@@ -65,13 +68,15 @@ def test_terminal_e2e(terminal_nr, it8951_driver, font_file,
     with open(f"/dev/tty{terminal_nr}", "wb") as fb:
         fb.write(test_bytes)
 
-    with open(f"/dev/vcs{terminal_nr}", 'rb') as vcsu_buffer:
+    with open(f"/dev/vcs{terminal_nr}", "rb") as vcsu_buffer:
         buff = vcsu_buffer.read()
 
-    with open(f"/dev/vcsa{terminal_nr}", 'rb') as vcsa_buffer:
+    with open(f"/dev/vcsa{terminal_nr}", "rb") as vcsa_buffer:
         attributes = vcsa_buffer.read(4)
 
-    rows, cols, cursor_col, cursor_row = list(map(ord, struct.unpack('cccc', attributes)))
+    rows, cols, cursor_col, cursor_row = list(
+        map(ord, struct.unpack("cccc", attributes))
+    )
     cursor = (cursor_row, cursor_col)
     log.info(f"The cursor is currently at row {cursor_row}, col {cursor_col}.")
 
