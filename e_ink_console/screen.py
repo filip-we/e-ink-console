@@ -46,6 +46,7 @@ def update_screen(
     cmd = [program, image_file_path, str(pos_width), str(pos_height), str(mode.value)]
     log.debug(f"Calling IT8951-drivers with arguments: {cmd}")
 
+    process_output_file = tempfile.TemporaryFile()
     retries = 0
     total_retries = 3
     while retries < total_retries:
@@ -54,16 +55,22 @@ def update_screen(
                 " ".join(cmd),
                 shell=True,
                 check=True,
+                stdout=process_output_file,
+                stderr=process_output_file,
             )
             return
         except subprocess.CalledProcessError:
             log.warning(
-                "Attempt {retries} out of {total_retries} to communicate with screen failed!"
+                f"Attempt {retries} out of {total_retries} to communicate with screen failed!"
             )
         finally:
             retries += 1
             time.sleep(1)
-    raise subprocess.CalledProcessError("Failed to communicate with screen!")
+
+    process_output_file.seek(0)
+    process_response = process_output_file.read()
+    process_output_file.close()
+    log.error(f"Failed to communicate with screen:\n{process_response.decode()}")
 
 
 def clear_screen(screen_height, screen_width, it8951_driver):
