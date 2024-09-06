@@ -93,13 +93,18 @@ class TerminalSettings:
             self.cols = 80
 
 
-def main_loop(settings, it8951_driver_program):
+class DummyHandler:
+    def terminated(self):
+        return False
+
+
+def main_loop(settings, it8951_driver_program, linux_process_handler=DummyHandler()):
     character_encoding_width = 1
     old_buff = b""
     old_cursor = (-1, -1)
 
     last_full_update = time.time()
-    while True:
+    while not linux_process_handler.terminated:
         with open(settings.vcsa.replace("vcsa", "vcs"), "rb") as vcsu_buffer:
             buff = vcsu_buffer.read()
 

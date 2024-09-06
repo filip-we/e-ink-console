@@ -3,6 +3,7 @@ import logging
 import click
 import os
 
+from e_ink_console.linux_process_handler import LinuxProcessHandler
 from e_ink_console.screen import clear_screen
 from e_ink_console.terminal import TerminalSettings, main_loop
 
@@ -34,6 +35,8 @@ def assert_console_input_file_params(files):
 @click.option("--rows", default=0)
 @click.option("--cols", default=0)
 def main(terminal_nr, font_file, font_size, it8951_driver, rows, cols):
+    linux = LinuxProcessHandler()
+
     assert terminal_nr
 
     assert_console_input_file_params(
@@ -54,9 +57,14 @@ def main(terminal_nr, font_file, font_size, it8951_driver, rows, cols):
         screen_height=825,
     )
 
+    log.info("Clearning screen.")
     clear_screen(settings.screen_height, settings.screen_width, it8951_driver)
+    # If we have cleared the screen without issues we report a thumbs up to systemd.
+    linux.sd_notify("READY=1")
 
-    main_loop(settings, it8951_driver)
+    log.debug("Starting main loop.")
+    main_loop(settings, it8951_driver, linux)
+    log.info("e-ink-console is now shutting down.")
 
 
 main()
