@@ -17,6 +17,8 @@ class LinuxProcessHandler:
             self.log.warning("Could not find socket to talk to systemd with.")
             return
 
+        if self.socket_address[0] == "@":
+            self.socket_address = 0x00 + self.socket_address[1:]
         self.sd_notify_socket.connect(self.socket_address)
         self.log.info("systemd-socket is connected.")
 
