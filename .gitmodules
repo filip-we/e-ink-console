@@ -1,3 +1,6 @@
 [submodule "rust-it8951"]
 	path = rust-it8951
 	url = git@github.com:filip-we/rust-it8951.git
+[submodule "open-fonts"]
+	path = open-fonts
+	url = git@github.com:kiwi0fruit/open-fonts.git
