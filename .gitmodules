@@ -1,0 +1,3 @@
+[submodule "rust-it8951"]
+	path = rust-it8951
+	url = git@github.com:filip-we/rust-it8951.git
