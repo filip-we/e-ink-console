@@ -1,5 +1,8 @@
+# Python
 .venv
 **/__pycache__
+
+# Custom stuff
 .local
 tests/output
 buffer.png
