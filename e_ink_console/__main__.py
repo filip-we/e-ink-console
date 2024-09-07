@@ -64,6 +64,8 @@ def main(terminal_nr, font_file, font_size, it8951_driver, rows, cols):
 
     log.debug("Starting main loop.")
     main_loop(settings, it8951_driver, linux)
+
+    clear_screen(settings.screen_height, settings.screen_width, it8951_driver)
     log.info("e-ink-console is now shutting down.")
 
 
