@@ -3,6 +3,8 @@ import logging
 import click
 import os
 
+from pathlib import Path
+
 from e_ink_console.linux_process_handler import LinuxProcessHandler
 from e_ink_console.screen import clear_screen
 from e_ink_console.terminal import TerminalSettings, main_loop
@@ -17,6 +19,9 @@ ch.setFormatter(
 )
 log.addHandler(ch)
 
+_file_path = Path(os.path.realpath(__file__))
+REPO_DIR = _file_path.parent.absolute().parent.absolute()
+
 
 def assert_console_input_file_params(files):
     for name, path in files.items():
@@ -28,10 +33,22 @@ def assert_console_input_file_params(files):
 
 
 @click.command()
-@click.option("--terminal-nr", help="Which /dev/tty to attach to..")
-@click.option("--font-file", help="Path to a font-file.")
+@click.option(
+    "--terminal-nr",
+    help="Which /dev/tty to attach to..",
+    default="2",
+)
+@click.option(
+    "--font-file",
+    help="Path to a font-file.",
+    default=(REPO_DIR / "open-fonts/Fonts/DejaVu/DejaVuSansMono.ttf"),
+)
 @click.option("--font-size", help="Size of font, in pixles.", default=16)
-@click.option("--it8951-driver", help="Name of driver-executable.")
+@click.option(
+    "--it8951-driver",
+    help="Name of driver-executable.",
+    default=(REPO_DIR / "rust-it8951/target/debug/examples/cli"),
+)
 @click.option("--rows", default=0)
 @click.option("--cols", default=0)
 def main(terminal_nr, font_file, font_size, it8951_driver, rows, cols):

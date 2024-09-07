@@ -6,3 +6,4 @@
 .local
 tests/output
 buffer.png
+e-ink-console.service
