@@ -2,7 +2,8 @@
 
 echo "This script will setup e-ink-console on your Linux machine!"
 
-# Get submodules?
+git submodule init
+git submodule update
 
 cargo --version > /dev/null
 # Install cargo
