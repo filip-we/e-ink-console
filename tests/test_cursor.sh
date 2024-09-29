@@ -11,12 +11,10 @@ VAR="Cursor at Home position."
 TESTS=(
 #"${CURSOR_HOME}Hello, world!"
 "${CLEAR}\x1B[0;0H0        1         2         3         4         5         6         7         8\x1B[10;0H1\x1B[20;0H2\x1B[30;0H3\x1B[39;0H39"
-"hej hej"
-"hej igen"
-"${CLEAR}${CURSOR_HOME}Let's clean the screen and write some stuff."
-"${CLEAR}${CURSOR_HOME}Clean the screen, then let's send four backspaces! 1234"
-"${BACKSPACE}${BACKSPACE}${BACKSPACE}${BACKSPACE}"
-"Now we should be printing neatly after the exclamation mark."
+"${CLEAR}${CURSOR_HOME}Now, let's send some backspaces! The text should be removed if this works correctly.\nRemove.."
+"${BACKSPACE}${BACKSPACE}${BACKSPACE}${BACKSPACE}${BACKSPACE}${BACKSPACE}${BACKSPACE}${BACKSPACE}"
+"012345678"
+"Now we should be printing neatly at the beginning of the line."
 )
 
 for string in "${TESTS[@]}"
