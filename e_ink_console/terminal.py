@@ -98,22 +98,25 @@ class DummyHandler:
         return False
 
 
+def read_terminal_properties(settings):
+    with open(settings.vcsa, "rb") as vcsa_buffer:
+        attributes = vcsa_buffer.read(4)
+
+    return list(map(ord, struct.unpack("cccc", attributes)))
+
+
 def main_loop(settings, it8951_driver_program, linux_process_handler=DummyHandler()):
     character_encoding_width = 1
     old_buff = b""
-    old_cursor = (-1, -1)
+    _, _, cursor_col, cursor_row = read_terminal_properties(settings)
+    old_cursor = (cursor_row, cursor_col)
 
     last_full_update = time.time()
     while not linux_process_handler.terminated:
         with open(settings.vcsa.replace("vcsa", "vcs"), "rb") as vcsu_buffer:
             buff = vcsu_buffer.read()
 
-        with open(settings.vcsa, "rb") as vcsa_buffer:
-            attributes = vcsa_buffer.read(4)
-
-        rows, cols, cursor_col, cursor_row = list(
-            map(ord, struct.unpack("cccc", attributes))
-        )
+        rows, cols, cursor_col, cursor_row = read_terminal_properties(settings)
         cursor = (cursor_row, cursor_col)
 
         if buff == old_buff and cursor == old_cursor:

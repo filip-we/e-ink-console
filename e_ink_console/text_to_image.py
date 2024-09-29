@@ -25,11 +25,12 @@ def get_full_terminal_image(settings, buffer_list, cursor, spacing=0):
             fill=BLACK,
             spacing=spacing,
         )
+    cursor_height = int(settings.font_height * 0.9)
     image.paste(
         settings.cursor_image,
         (
             cursor[1] * settings.font_width,
-            (cursor[0] + settings.cursor_thickness - 1) * settings.font_height,
+            (cursor[0] + settings.cursor_thickness - 1) * cursor_height,
         ),
     )
 
@@ -118,13 +119,10 @@ def get_contained_text_area(row_sections, old_cursor, new_cursor):
         col_max = max(col_max, section[2])
 
     if old_cursor != new_cursor:
-        # Handle edge case of first drawing of console
-        old_cursor_row = old_cursor[0] if old_cursor[0] >= 0 else new_cursor[0]
-        old_cursor_col = old_cursor[1] if old_cursor[1] >= 0 else new_cursor[1]
-        row_min = min(row_min, old_cursor_row, new_cursor[0])
-        row_max = max(row_max, old_cursor_row, new_cursor[0])
-        col_min = min(col_min, old_cursor_col, new_cursor[1])
-        col_max = max(col_max, old_cursor_col, new_cursor[1])
+        row_min = min(row_min, old_cursor[0], new_cursor[0])
+        row_max = max(row_max, old_cursor[0], new_cursor[0])
+        col_min = min(col_min, old_cursor[1], new_cursor[1])
+        col_max = max(col_max, old_cursor[1], new_cursor[1])
 
     return (row_min, col_min, row_max, col_max)
 
