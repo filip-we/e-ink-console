@@ -129,13 +129,17 @@ def get_contained_text_area(row_sections, old_cursor, new_cursor):
 
 def crop_image(settings, image, text_area):
     """Takes a PIL-image and returns a cropped image on the section described in text_area. text_area is given in rows and columns."""
-    upper_left = [
-        text_area[1] * settings.font_width,
-        text_area[0] * settings.font_height,
-    ]
-    lower_right = [
+    # Order of points:
+    # Top horizontal, left vertical, bottom horizontal, right vertical
+    points = [
+        max(text_area[1] * settings.font_width - 10, 0),
+        max(text_area[0] * settings.font_height - 10, 0),
         min((text_area[3] + 1), settings.cols) * settings.font_width,
         min((text_area[2] + 1), settings.rows) * settings.font_height,
     ]
-    log.debug(f"Cropping image to corners {upper_left} and {lower_right}.")
-    return image.crop(upper_left + lower_right)
+    log.debug(f"Cropping image to corners {points[0:1]} and {points[2:3]}.")
+    image = image.resize(
+        size=[points[2] - points[0], points[3] - points[1]],
+        box=points,
+    )
+    return image, points[0], points[1]

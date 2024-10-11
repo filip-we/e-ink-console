@@ -6,6 +6,7 @@ import tempfile
 import time
 
 from enum import Enum
+from pathlib import Path
 
 from .text_to_image import (
     crop_image,
@@ -16,6 +17,12 @@ from .text_to_image import (
 )
 
 log = logging.getLogger(__name__)
+
+_file_path = Path(os.path.realpath(__file__))
+_repo_dir = _file_path.parent.absolute().parent.absolute()
+DEBUG_BUFF_DIR = _repo_dir / Path("debug_buffer_images")
+
+debug_buffer_no = 0
 
 
 class ScreenUpdateMode(Enum):
@@ -97,6 +104,7 @@ def write_buffer_to_screen(
     character_encoding_width,
     it8951_driver,
     full_update=True,
+    save_debugging_image=False,
 ):
     """Writes the buffer to the screen by decoding it, converting it to an image and sending it to the screen."""
     changed_sections = identify_changed_text_area(
@@ -120,15 +128,14 @@ def write_buffer_to_screen(
         x_pos = 0
         mode = ScreenUpdateMode.GC16
     else:
-        log.debug("Doing a partial update!")
-        image = crop_image(settings, image, contained_text_area)
-        y_pos = contained_text_area[0] * settings.font_height
-        x_pos = contained_text_area[1] * settings.font_width
+        image, x_pos, y_pos = crop_image(settings, image, contained_text_area)
         mode = ScreenUpdateMode.A2
 
-    # For debugging
-    with open("buffer.png", "wb") as fb:
-        image.save(fb)
+    if save_debugging_image:
+        global debug_buffer_no
+        with open(f"{DEBUG_BUFF_DIR}/buffer_{debug_buffer_no}.png", "wb") as fb:
+            image.save(fb)
+            debug_buffer_no += 1
 
     with tempfile.TemporaryDirectory() as temp_dir:
         with open(os.path.join(temp_dir, "buffer.png"), "wb") as fb:
