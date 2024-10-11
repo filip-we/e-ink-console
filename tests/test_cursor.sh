@@ -15,6 +15,7 @@ TESTS=(
 "${BACKSPACE}${BACKSPACE}${BACKSPACE}${BACKSPACE}${BACKSPACE}${BACKSPACE}${BACKSPACE}${BACKSPACE}"
 "012345678"
 "Now we should be printing neatly at the beginning of the line."
+"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nSome new line lower down on screen."
 )
 
 for string in "${TESTS[@]}"
