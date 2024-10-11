@@ -10,6 +10,18 @@ WHITE = 255
 log = logging.getLogger(__name__)
 
 
+def _paste_cursor_image(settings, cursor, image, text_area):
+    image.paste(
+        settings.cursor_image,
+        (
+            (cursor[1] - text_area[1]) * settings.font_width,
+            ((cursor[0] - text_area[0] + 1) * settings.font_height)
+            - settings.cursor_thickness,
+        ),
+    )
+    return image
+
+
 def get_full_terminal_image(settings, buffer_list, cursor, spacing=0):
     width = settings.cols * settings.font_width
     height = settings.rows * settings.font_height
@@ -25,14 +37,7 @@ def get_full_terminal_image(settings, buffer_list, cursor, spacing=0):
             fill=BLACK,
             spacing=spacing,
         )
-    cursor_height = int(settings.font_height * 0.9)
-    image.paste(
-        settings.cursor_image,
-        (
-            cursor[1] * settings.font_width,
-            (cursor[0] + settings.cursor_thickness - 1) * cursor_height,
-        ),
-    )
+    image = _paste_cursor_image(settings, cursor, image, [0, 0, 0, 0])
 
     return image
 
@@ -62,14 +67,7 @@ def get_partial_terminal_image(settings, buffer_list, text_area, cursor, spacing
             spacing=spacing,
         )
 
-    image.paste(
-        settings.cursor_image,
-        (
-            (cursor[1] - text_area[1]) * settings.font_width,
-            ((cursor[0] - text_area[0]) + settings.cursor_thickness - 1)
-            * settings.font_height,
-        ),
-    )
+    image = _paste_cursor_image(settings, cursor, image, text_area)
 
     return image
 
