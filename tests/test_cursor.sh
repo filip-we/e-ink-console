@@ -22,3 +22,6 @@ do
     read -p "Press ENTER to run next test."
     echo -en "${string}" > $1
 done
+
+read -p "Press ENTER to clean screen."
+echo -en $CLEAR > $1

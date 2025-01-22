@@ -8,13 +8,9 @@ BACKSPACE="\x08"
 
 TESTS=(
 "${CLEAR}${CURSOR_HOME}\nNew line.."
-"123"
-"xxx"
-"yyy"
+"123xxxyyy"
 "${BACKSPACE}${BACKSPACE}${BACKSPACE}${BACKSPACE}${BACKSPACE}${BACKSPACE}"
-"456"
-"789"
-"abc"
+"456789abc"
 "${BACKSPACE}${BACKSPACE}${BACKSPACE}"
 "Ending number here. v"
 )
@@ -22,5 +18,9 @@ TESTS=(
 for string in "${TESTS[@]}"
 do
     echo -en "${string}" > $1
-    sleep 0.8
+    # sleep 0.8
+    read -p "Press ENTER to continue."
 done
+
+read -p "Press ENTER to clean screen."
+echo -en $CLEAR > $1
